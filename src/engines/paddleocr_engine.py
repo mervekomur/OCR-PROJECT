@@ -182,12 +182,29 @@ class PaddleOCREngine(BaseOCREngine):
                 except ValueError:
                     continue
 
-        # Extract merchant
-        for line in lines[:5]:
+        # Extract merchant - skip serial numbers and metadata
+        merchant_blacklist = ['SERI', 'SIRA', 'NO:', 'NO.', 'ABS', 'FIS', 'FİŞ',
+                              'TARIH', 'TARİH', 'SAAT', 'VKN', 'TCKN', 'PERAKENDE',
+                              'SATIS', 'SATIŞ']
+        for line in lines[:8]:  # Check more lines
             line_text = line['text'].strip()
-            if len(line_text) > 3:
-                fields['merchant'] = line_text
-                fields['merchant_confidence'] = line['confidence']
-                break
+            line_upper = line_text.upper()
+
+            # Skip if too short
+            if len(line_text) < 3:
+                continue
+
+            # Skip if contains blacklisted words
+            if any(bl in line_upper for bl in merchant_blacklist):
+                continue
+
+            # Skip if looks like a number/code (mostly digits)
+            digit_ratio = sum(c.isdigit() for c in line_text) / len(line_text)
+            if digit_ratio > 0.5:
+                continue
+
+            fields['merchant'] = line_text
+            fields['merchant_confidence'] = line['confidence']
+            break
 
         return fields
