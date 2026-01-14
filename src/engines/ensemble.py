@@ -193,31 +193,31 @@ class EnsembleOCR:
         print("=" * 80)
 
         # Engine summary table
-        print("\n┌" + "─" * 78 + "┐")
-        print(f"│ {'ENGINE':<15} │ {'CONFIDENCE':>12} │ {'TIME (s)':>10} │ {'STATUS':<30} │")
-        print("├" + "─" * 78 + "┤")
+        print("\n+" + "-" * 78 + "+")
+        print(f"| {'ENGINE':<15} | {'CONFIDENCE':>12} | {'TIME (s)':>10} | {'STATUS':<30} |")
+        print("+" + "-" * 78 + "+")
 
         for name, result in comparison.results.items():
-            status = "✓ OK" if result.confidence > 0 else "✗ Failed"
+            status = "[OK]" if result.confidence > 0 else "[X] Failed"
             if result.metadata.get('error'):
-                status = f"✗ {result.metadata['error'][:25]}"
+                status = f"[X] {result.metadata['error'][:25]}"
 
             conf_str = f"{result.confidence:.1%}" if result.confidence > 0 else "N/A"
             time_str = f"{result.processing_time:.2f}" if result.processing_time > 0 else "N/A"
 
-            marker = "★" if name == comparison.best_engine else " "
-            print(f"│{marker}{name:<14} │ {conf_str:>12} │ {time_str:>10} │ {status:<30} │")
+            marker = "*" if name == comparison.best_engine else " "
+            print(f"|{marker}{name:<14} | {conf_str:>12} | {time_str:>10} | {status:<30} |")
 
-        print("└" + "─" * 78 + "┘")
-        print("  ★ = Best overall confidence")
+        print("+" + "-" * 78 + "+")
+        print("  * = Best overall confidence")
 
         # Field comparison table
-        print("\n┌" + "─" * 78 + "┐")
-        print(f"│ {'FIELD':<12} │", end="")
+        print("\n+" + "-" * 78 + "+")
+        print(f"| {'FIELD':<12} |", end="")
         for name in comparison.results.keys():
-            print(f" {name:<18} │", end="")
+            print(f" {name:<18} |", end="")
         print()
-        print("├" + "─" * 78 + "┤")
+        print("+" + "-" * 78 + "+")
 
         fields = [
             ('merchant', 'Merchant'),
@@ -227,7 +227,7 @@ class EnsembleOCR:
         ]
 
         for field_key, field_name in fields:
-            print(f"│ {field_name:<12} │", end="")
+            print(f"| {field_name:<12} |", end="")
 
             best_conf = 0
             best_engine = None
@@ -242,7 +242,7 @@ class EnsembleOCR:
                 conf = result.fields.get(f'{field_key}_confidence', 0.0)
 
                 if value is None:
-                    display = "—"
+                    display = "-"
                 elif isinstance(value, float):
                     display = f"{value:.2f}"
                 else:
@@ -253,39 +253,39 @@ class EnsembleOCR:
                     display = display[:12] + "..."
 
                 # Mark best with star
-                marker = "★" if name == best_engine and best_conf > 0 else " "
-                print(f"{marker}{display:<17} │", end="")
+                marker = "*" if name == best_engine and best_conf > 0 else " "
+                print(f"{marker}{display:<17} |", end="")
 
             print()
 
-        print("└" + "─" * 78 + "┘")
-        print("  ★ = Highest confidence for this field")
+        print("+" + "-" * 78 + "+")
+        print("  * = Highest confidence for this field")
 
         # Confidence details
-        print("\n┌" + "─" * 78 + "┐")
-        print(f"│ {'CONFIDENCE':<12} │", end="")
+        print("\n+" + "-" * 78 + "+")
+        print(f"| {'CONFIDENCE':<12} |", end="")
         for name in comparison.results.keys():
-            print(f" {name:<18} │", end="")
+            print(f" {name:<18} |", end="")
         print()
-        print("├" + "─" * 78 + "┤")
+        print("+" + "-" * 78 + "+")
 
         for field_key, field_name in fields:
-            print(f"│ {field_name:<12} │", end="")
+            print(f"| {field_name:<12} |", end="")
             for name, result in comparison.results.items():
                 conf = result.fields.get(f'{field_key}_confidence', 0.0)
-                conf_str = f"{conf:.1%}" if conf > 0 else "—"
-                print(f" {conf_str:<17} │", end="")
+                conf_str = f"{conf:.1%}" if conf > 0 else "-"
+                print(f" {conf_str:<17} |", end="")
             print()
 
-        print("└" + "─" * 78 + "┘")
+        print("+" + "-" * 78 + "+")
 
         # Summary
-        print(f"\n📊 SUMMARY:")
+        print(f"\n## SUMMARY:")
         print(f"   Best Overall Engine: {comparison.best_engine}")
         print(f"   Field Winners:")
         for field, info in comparison.summary.get('field_winners', {}).items():
             if info['engine']:
-                print(f"     • {field.capitalize()}: {info['engine']} ({info['confidence']:.1%})")
+                print(f"     - {field.capitalize()}: {info['engine']} ({info['confidence']:.1%})")
 
         # Raw text (optional)
         if show_raw_text:

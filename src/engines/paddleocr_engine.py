@@ -20,43 +20,44 @@ class PaddleOCREngine(BaseOCREngine):
     name = "paddleocr"
     description = "PaddleOCR - High accuracy multi-language OCR by Baidu"
 
-    def __init__(self, lang: str = 'tr', use_gpu: bool = False):
+    def __init__(self, lang: str = 'tr'):
         """
-        Initialize PaddleOCR engine.
+        Initialize PaddleOCR engine (CPU mode).
 
         Args:
             lang: Language code ('tr', 'en', 'fr', etc.)
-            use_gpu: Enable GPU acceleration
         """
         super().__init__()
         self.lang = lang
-        self.use_gpu = use_gpu
+        self._paddle_available = None
 
     @classmethod
     def _check_availability(cls) -> bool:
-        """Check if PaddleOCR is installed."""
+        """Check if PaddleOCR is installed and compatible."""
         try:
             from paddleocr import PaddleOCR
+            # PaddleOCR 3.x has compatibility issues on Windows CPU
+            # Will be tested on Colab with GPU
+            import paddleocr
+            version = getattr(paddleocr, '__version__', '0.0.0')
+            # Disable for now due to API changes, enable for Colab testing
+            if version.startswith('3.'):
+                return False  # PaddleOCR 3.x not supported on local Windows
             return True
         except ImportError:
             return False
 
     def _initialize(self) -> None:
-        """Initialize PaddleOCR."""
+        """Initialize PaddleOCR (CPU mode, lightweight)."""
         from paddleocr import PaddleOCR
 
-        logger.info(f"Loading PaddleOCR (lang: {self.lang}, gpu: {self.use_gpu})...")
+        logger.info(f"Loading PaddleOCR (lang: {self.lang}, CPU mode)...")
 
         # PaddleOCR language mapping
-        # Turkish is not directly supported, use 'en' with Turkish-like settings
         paddle_lang = self.lang if self.lang in ['en', 'ch', 'fr', 'german', 'korean', 'japan'] else 'en'
 
-        self._model = PaddleOCR(
-            use_angle_cls=True,
-            lang=paddle_lang,
-            use_gpu=self.use_gpu,
-            show_log=False
-        )
+        # PaddleOCR 3.x simplified initialization
+        self._model = PaddleOCR(lang=paddle_lang)
         logger.info("PaddleOCR ready.")
 
     def _extract_text(self, image_path: str) -> OCRResult:

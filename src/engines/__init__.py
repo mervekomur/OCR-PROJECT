@@ -8,7 +8,7 @@ from .easyocr_engine import EasyOCREngine
 from .paddleocr_engine import PaddleOCREngine
 from .donut_engine import DonutEngine
 from .got_ocr_engine import GOTOCREngine
-from .ensemble import EnsembleOCR
+from .ensemble import EnsembleOCR, compare_engines
 
 __all__ = [
     'BaseOCREngine',
@@ -17,5 +17,6 @@ __all__ = [
     'PaddleOCREngine',
     'DonutEngine',
     'GOTOCREngine',
-    'EnsembleOCR'
+    'EnsembleOCR',
+    'compare_engines'
 ]
