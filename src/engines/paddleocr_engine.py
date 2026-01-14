@@ -33,32 +33,38 @@ class PaddleOCREngine(BaseOCREngine):
 
     @classmethod
     def _check_availability(cls) -> bool:
-        """Check if PaddleOCR is installed and compatible."""
+        """Check if PaddleOCR is installed."""
         try:
             from paddleocr import PaddleOCR
-            # PaddleOCR 3.x has compatibility issues on Windows CPU
-            # Will be tested on Colab with GPU
             import paddleocr
             version = getattr(paddleocr, '__version__', '0.0.0')
-            # Disable for now due to API changes, enable for Colab testing
+            # PaddleOCR 2.x is supported (CPU mode)
+            # PaddleOCR 3.x has API issues on Windows
             if version.startswith('3.'):
-                return False  # PaddleOCR 3.x not supported on local Windows
+                logger.warning(f"PaddleOCR 3.x detected ({version}), may have issues. Consider downgrade to 2.7.x")
+                return False
             return True
         except ImportError:
             return False
 
     def _initialize(self) -> None:
-        """Initialize PaddleOCR (CPU mode, lightweight)."""
+        """Initialize PaddleOCR (CPU mode, no GPU required)."""
         from paddleocr import PaddleOCR
 
         logger.info(f"Loading PaddleOCR (lang: {self.lang}, CPU mode)...")
 
         # PaddleOCR language mapping
+        # Turkish not directly supported, use English model
         paddle_lang = self.lang if self.lang in ['en', 'ch', 'fr', 'german', 'korean', 'japan'] else 'en'
 
-        # PaddleOCR 3.x simplified initialization
-        self._model = PaddleOCR(lang=paddle_lang)
-        logger.info("PaddleOCR ready.")
+        # Initialize with CPU mode explicitly
+        self._model = PaddleOCR(
+            use_angle_cls=True,  # Enable text angle classification
+            lang=paddle_lang,
+            use_gpu=False,       # Force CPU mode
+            show_log=False       # Suppress verbose logging
+        )
+        logger.info("PaddleOCR ready (CPU mode).")
 
     def _extract_text(self, image_path: str) -> OCRResult:
         """Extract text using PaddleOCR."""

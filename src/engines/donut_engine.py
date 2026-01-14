@@ -38,14 +38,15 @@ class DonutEngine(BaseOCREngine):
 
     @classmethod
     def _check_availability(cls) -> bool:
-        """Check if required packages are installed."""
-        try:
-            import torch
-            from transformers import DonutProcessor, VisionEncoderDecoderModel
-            from PIL import Image
-            return True
-        except ImportError:
-            return False
+        """
+        Check if Donut is available.
+
+        NOTE: Donut requires ~1.5GB model download and GPU for practical use.
+        Disabled for local development. Enable for Colab/Cloud testing.
+        """
+        # Disabled: Heavy model (~1.5GB), requires GPU for practical speed
+        # To enable: return True and ensure torch + transformers are installed
+        return False
 
     def _initialize(self) -> None:
         """Initialize Donut model and processor."""

@@ -38,14 +38,15 @@ class GOTOCREngine(BaseOCREngine):
 
     @classmethod
     def _check_availability(cls) -> bool:
-        """Check if required packages are installed."""
-        try:
-            import torch
-            from transformers import AutoModel, AutoTokenizer
-            from PIL import Image
-            return True
-        except ImportError:
-            return False
+        """
+        Check if GOT-OCR is available.
+
+        NOTE: GOT-OCR requires ~4-5GB model download and GPU (CUDA required).
+        Disabled for local development. Enable for Colab/Cloud testing.
+        """
+        # Disabled: Very heavy model (~4-5GB), requires CUDA GPU
+        # To enable: return True and ensure torch + transformers are installed
+        return False
 
     def _initialize(self) -> None:
         """Initialize GOT-OCR model and tokenizer."""
