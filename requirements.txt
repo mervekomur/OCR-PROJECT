@@ -1,26 +1,45 @@
-# Gider OCR Servisi - Python Bagimliliklari
+# OCR Receipt Parser - Python Dependencies
 # ==========================================
 
-# OCR Kutuphaneleri
+# Core OCR Engines
 easyocr>=1.7.0
-# pytesseract>=0.3.10  # Tesseract kurulumu gerektirir
 
-# Goruntu Isleme
+# PaddleOCR (optional - uncomment to install)
+# paddlepaddle>=2.5.0
+# paddleocr>=2.7.0
+
+# Donut & GOT-OCR (optional - uncomment to install)
+# torch>=2.0.0
+# transformers>=4.35.0
+
+# Image Processing
 opencv-python>=4.8.0
 numpy>=1.24.0
 Pillow>=10.0.0
 
-# Web Framework
-# fastapi>=0.100.0
-# uvicorn>=0.23.0
+# Utilities
+# python-dotenv>=1.0.0
 
-# Veri Isleme
-# numpy>=1.24.0
-# pandas>=2.0.0
-
-# Test
+# Testing (optional)
 # pytest>=7.4.0
 
-# Yardimci
-# python-multipart>=0.0.6
-# python-dotenv>=1.0.0
+# ==========================================
+# INSTALLATION NOTES:
+# ==========================================
+#
+# Basic installation (EasyOCR only):
+#   pip install -r requirements.txt
+#
+# With PaddleOCR:
+#   pip install paddlepaddle paddleocr
+#
+# With Donut:
+#   pip install torch transformers
+#
+# With GOT-OCR:
+#   pip install torch transformers
+#   (requires GPU for best performance)
+#
+# Full installation (all engines):
+#   pip install easyocr paddlepaddle paddleocr torch transformers opencv-python numpy Pillow
+#
