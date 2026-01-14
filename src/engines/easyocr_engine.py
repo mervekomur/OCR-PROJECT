@@ -132,21 +132,28 @@ class EasyOCREngine(BaseOCREngine):
                 fields['time'] = match.group(1)
                 break
 
-        # Extract total
+        # Extract total - multiple formats supported
         total_patterns = [
-            r'TOPLAM\s*[:.]?\s*\*?(\d+[.,]\d{2})',
-            r'TOTAL\s*[:.]?\s*[€$£₺]?\s*(\d+[.,]\d{2})',
-            r'TUTAR\s*[:.]?\s*(\d+[.,]\d{2})',
+            r'TOPLAM[\s\n]*[:.]?\s*\*?(\d+[.,]\d{1,2})',   # TOPLAM 1000.70 or 1000.7
+            r'TOPLAM[\s\n]*[:.]?\s*\*?(\d+)[.,]?(?!\d)',   # TOPLAM 1000 (no decimal)
+            r'TOTAL[\s\n]*[:.]?\s*[€$£₺]?\s*(\d+[.,]\d{1,2})',
+            r'TUTAR[\s\n]*[:.]?\s*(\d+[.,]\d{1,2})',
+            r'(\d+[.,]\d{1,2})\s*TL',                       # 1000.70 TL format
         ]
         for pattern in total_patterns:
             match = re.search(pattern, text_upper)
             if match:
-                fields['total'] = float(match.group(1).replace(',', '.'))
-                for line in lines:
-                    if 'TOPLAM' in line['text'].upper() or 'TOTAL' in line['text'].upper():
-                        fields['total_confidence'] = line['confidence']
-                        break
-                break
+                total_str = match.group(1).replace(',', '.')
+                total_str = total_str.rstrip('.')
+                try:
+                    fields['total'] = float(total_str)
+                    for line in lines:
+                        if 'TOPLAM' in line['text'].upper() or 'TOTAL' in line['text'].upper():
+                            fields['total_confidence'] = line['confidence']
+                            break
+                    break
+                except ValueError:
+                    continue
 
         # Extract merchant (usually first non-empty uppercase line)
         for line in lines[:5]:
