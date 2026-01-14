@@ -1,50 +1,68 @@
 """
-Goruntu Isleme (Preprocessing) Modulu
-OCR oncesi goruntu hazirlama islemleri icin kullanilir.
+Image Preprocessing Module
+Prepares images for OCR processing.
 """
 
 import cv2
 import numpy as np
 from pathlib import Path
 
+from utils.logger import get_logger
+from constants import (
+    GAUSSIAN_KERNEL_SIZE, GAUSSIAN_SIGMA,
+    MEDIAN_KERNEL_SIZE,
+    BILATERAL_DIAMETER, BILATERAL_SIGMA_COLOR, BILATERAL_SIGMA_SPACE,
+    NLM_FILTER_STRENGTH, NLM_TEMPLATE_WINDOW_SIZE, NLM_SEARCH_WINDOW_SIZE,
+    ADAPTIVE_BLOCK_SIZE, ADAPTIVE_C,
+    BINARY_THRESHOLD_VALUE, BINARY_MAX_VALUE,
+    CLAHE_CLIP_LIMIT, CLAHE_TILE_GRID_SIZE,
+    CANNY_THRESHOLD_LOW, CANNY_THRESHOLD_HIGH,
+    MORPH_KERNEL_SIZE, MORPH_DILATE_ITERATIONS, MORPH_ERODE_ITERATIONS,
+    CONTOUR_APPROX_EPSILON,
+    DESKEW_MIN_ANGLE,
+    SHADOW_KERNEL_SIZE, SHADOW_BLUR_SIZE,
+    SHARPEN_KERNEL
+)
+
+logger = get_logger(__name__)
+
 
 def load_image(image_path: str) -> np.ndarray:
     """
-    Goruntu dosyasini yukler.
+    Load image from file.
 
     Args:
-        image_path: Goruntu dosyasinin yolu
+        image_path: Path to image file
 
     Returns:
-        numpy.ndarray: Yuklenen goruntu
+        Loaded image as numpy array
 
     Raises:
-        FileNotFoundError: Dosya bulunamazsa
-        ValueError: Goruntu okunamazsa
+        FileNotFoundError: If file doesn't exist
+        ValueError: If image can't be read
     """
     path = Path(image_path)
     if not path.exists():
-        raise FileNotFoundError(f"Dosya bulunamadi: {image_path}")
+        raise FileNotFoundError(f"File not found: {image_path}")
 
     image = cv2.imread(str(path))
     if image is None:
-        raise ValueError(f"Goruntu okunamadi: {image_path}")
+        raise ValueError(f"Cannot read image: {image_path}")
 
     return image
 
 
 def to_grayscale(image: np.ndarray) -> np.ndarray:
     """
-    Goruntuyu gri tona (grayscale) cevirir.
+    Convert image to grayscale.
 
     Args:
-        image: BGR formatinda goruntu
+        image: BGR format image
 
     Returns:
-        numpy.ndarray: Gri tonlu goruntu
+        Grayscale image
     """
     if len(image.shape) == 2:
-        # Zaten gri tonlu
         return image
 
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -52,78 +70,100 @@ def to_grayscale(image: np.ndarray) -> np.ndarray:
 
 def reduce_noise(image: np.ndarray, method: str = "gaussian") -> np.ndarray:
     """
-    Goruntudeki gurultuyu temizler.
+    Remove noise from image.
 
     Args:
-        image: Gri tonlu goruntu
-        method: Gurultu temizleme yontemi
-                - "gaussian": Gaussian Blur (hizli, genel amacli)
-                - "median": Median Blur (tuz-biber gurultusu icin)
-                - "bilateral": Bilateral Filter (kenarlari korur)
-                - "nlm": Non-Local Means (en iyi kalite, yavas)
+        image: Grayscale image
+        method: Noise reduction method
+            - "gaussian": Gaussian Blur (fast, general purpose)
+            - "median": Median Blur (for salt-and-pepper noise)
+            - "bilateral": Bilateral Filter (preserves edges)
+            - "nlm": Non-Local Means (best quality, slow)
 
     Returns:
-        numpy.ndarray: Gurultusu temizlenmis goruntu
+        Denoised image
     """
     if method == "gaussian":
-        return cv2.GaussianBlur(image, (5, 5), 0)
+        return cv2.GaussianBlur(image, GAUSSIAN_KERNEL_SIZE, GAUSSIAN_SIGMA)
 
     elif method == "median":
-        return cv2.medianBlur(image, 5)
+        return cv2.medianBlur(image, MEDIAN_KERNEL_SIZE)
 
     elif method == "bilateral":
-        return cv2.bilateralFilter(image, 9, 75, 75)
+        return cv2.bilateralFilter(
+            image,
+            BILATERAL_DIAMETER,
+            BILATERAL_SIGMA_COLOR,
+            BILATERAL_SIGMA_SPACE
+        )
 
     elif method == "nlm":
-        return cv2.fastNlMeansDenoising(image, None, 10, 7, 21)
+        return cv2.fastNlMeansDenoising(
+            image, None,
+            NLM_FILTER_STRENGTH,
+            NLM_TEMPLATE_WINDOW_SIZE,
+            NLM_SEARCH_WINDOW_SIZE
+        )
 
     else:
-        raise ValueError(f"Bilinmeyen yontem: {method}. "
-                        f"Gecerli yontemler: gaussian, median, bilateral, nlm")
+        raise ValueError(
+            f"Unknown method: {method}. "
+            f"Valid methods: gaussian, median, bilateral, nlm"
+        )
 
 
 def apply_threshold(image: np.ndarray, method: str = "adaptive") -> np.ndarray:
     """
-    Thresholding uygulayarak yazilari belirginlestirir.
+    Apply thresholding to enhance text.
 
     Args:
-        image: Gri tonlu goruntu
-        method: Thresholding yontemi
-                - "binary": Basit binary threshold
-                - "otsu": Otsu'nun otomatik threshold yontemi
-                - "adaptive": Adaptive threshold (degisken aydinlatma icin)
-                - "adaptive_gaussian": Gaussian adaptive threshold
+        image: Grayscale image
+        method: Thresholding method
+            - "binary": Simple binary threshold
+            - "otsu": Otsu's automatic threshold
+            - "adaptive": Adaptive threshold
+            - "adaptive_gaussian": Gaussian adaptive threshold
 
     Returns:
-        numpy.ndarray: Threshold uygulanmis goruntu
+        Thresholded image
     """
     if method == "binary":
-        _, result = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
+        _, result = cv2.threshold(
+            image,
+            BINARY_THRESHOLD_VALUE,
+            BINARY_MAX_VALUE,
+            cv2.THRESH_BINARY
+        )
         return result
 
     elif method == "otsu":
-        _, result = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        _, result = cv2.threshold(
+            image, 0, BINARY_MAX_VALUE,
+            cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
         return result
 
     elif method == "adaptive":
         return cv2.adaptiveThreshold(
-            image, 255,
+            image, BINARY_MAX_VALUE,
             cv2.ADAPTIVE_THRESH_MEAN_C,
             cv2.THRESH_BINARY,
-            11, 2
+            ADAPTIVE_BLOCK_SIZE, ADAPTIVE_C
         )
 
     elif method == "adaptive_gaussian":
         return cv2.adaptiveThreshold(
-            image, 255,
+            image, BINARY_MAX_VALUE,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             cv2.THRESH_BINARY,
-            11, 2
+            ADAPTIVE_BLOCK_SIZE, ADAPTIVE_C
         )
 
     else:
-        raise ValueError(f"Bilinmeyen yontem: {method}. "
-                        f"Gecerli yontemler: binary, otsu, adaptive, adaptive_gaussian")
+        raise ValueError(
+            f"Unknown method: {method}. "
+            f"Valid methods: binary, otsu, adaptive, adaptive_gaussian"
+        )
 
 
 def preprocess(
@@ -132,23 +172,18 @@ def preprocess(
     threshold_method: str = "adaptive"
 ) -> np.ndarray:
     """
-    Tum preprocessing adimlarini sirasiyla uygular.
+    Apply all preprocessing steps in sequence.
 
     Args:
-        image: BGR formatinda goruntu
-        noise_method: Gurultu temizleme yontemi
-        threshold_method: Thresholding yontemi
+        image: BGR format image
+        noise_method: Noise reduction method
+        threshold_method: Thresholding method
 
     Returns:
-        numpy.ndarray: Islenmis goruntu
+        Preprocessed image
     """
-    # 1. Gri tona cevir
     gray = to_grayscale(image)
-
-    # 2. Gurultu temizle
     denoised = reduce_noise(gray, method=noise_method)
-
-    # 3. Threshold uygula
     result = apply_threshold(denoised, method=threshold_method)
 
     return result
@@ -156,20 +191,23 @@ def preprocess(
 
 def enhance_contrast(image: np.ndarray, method: str = "clahe") -> np.ndarray:
     """
-    Goruntu kontrastini arttirir.
+    Enhance image contrast.
 
     Args:
-        image: Gri tonlu goruntu
-        method: Kontrast artirma yontemi
-                - "clahe": Adaptive histogram equalization (onerilen)
-                - "hist_eq": Standart histogram equalization
-                - "normalize": Min-max normalization
+        image: Grayscale image
+        method: Contrast enhancement method
+            - "clahe": Adaptive histogram equalization (recommended)
+            - "hist_eq": Standard histogram equalization
+            - "normalize": Min-max normalization
 
     Returns:
-        numpy.ndarray: Kontrasti arttirilmis goruntu
+        Contrast-enhanced image
     """
     if method == "clahe":
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(
+            clipLimit=CLAHE_CLIP_LIMIT,
+            tileGridSize=CLAHE_TILE_GRID_SIZE
+        )
         return clahe.apply(image)
 
     elif method == "hist_eq":
@@ -179,44 +217,46 @@ def enhance_contrast(image: np.ndarray, method: str = "clahe") -> np.ndarray:
         return cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX)
 
     else:
-        raise ValueError(f"Bilinmeyen yontem: {method}")
+        raise ValueError(f"Unknown method: {method}")
 
 
 def detect_receipt_contour(image: np.ndarray) -> np.ndarray:
     """
-    Goruntuде fis/belge konturunu tespit eder.
+    Detect receipt/document contour in image.
 
     Args:
-        image: BGR formatinda goruntu
+        image: BGR format image
 
     Returns:
-        numpy.ndarray: 4 koseli kontur (varsa), yoksa None
+        4-point contour if found, None otherwise
     """
     gray = to_grayscale(image)
 
-    # Kenar tespiti
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = cv2.Canny(blurred, 50, 150)
+    # Edge detection
+    blurred = cv2.GaussianBlur(gray, GAUSSIAN_KERNEL_SIZE, GAUSSIAN_SIGMA)
+    edges = cv2.Canny(blurred, CANNY_THRESHOLD_LOW, CANNY_THRESHOLD_HIGH)
 
-    # Morfolojik islemler - kenarlari birlestir
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
-    edges = cv2.dilate(edges, kernel, iterations=2)
-    edges = cv2.erode(edges, kernel, iterations=1)
+    # Morphological operations
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, MORPH_KERNEL_SIZE)
+    edges = cv2.dilate(edges, kernel, iterations=MORPH_DILATE_ITERATIONS)
+    edges = cv2.erode(edges, kernel, iterations=MORPH_ERODE_ITERATIONS)
 
-    # Konturlari bul
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Find contours
+    contours, _ = cv2.findContours(
+        edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
 
     if not contours:
         return None
 
-    # En buyuk konturu bul
+    # Find largest contour
     largest_contour = max(contours, key=cv2.contourArea)
 
-    # Kontur yaklasiklama
+    # Approximate contour
     peri = cv2.arcLength(largest_contour, True)
-    approx = cv2.approxPolyDP(largest_contour, 0.02 * peri, True)
+    approx = cv2.approxPolyDP(largest_contour, CONTOUR_APPROX_EPSILON * peri, True)
 
-    # 4 koseli mi kontrol et
+    # Check if 4-point contour
     if len(approx) == 4:
         return approx
 
@@ -225,22 +265,20 @@ def detect_receipt_contour(image: np.ndarray) -> np.ndarray:
 
 def order_points(pts: np.ndarray) -> np.ndarray:
     """
-    4 noktayi saat yonunde siralar: sol-ust, sag-ust, sag-alt, sol-alt.
+    Order 4 points clockwise: top-left, top-right, bottom-right, bottom-left.
 
     Args:
-        pts: 4 noktadan olusan array
+        pts: Array of 4 points
 
     Returns:
-        numpy.ndarray: Siralanmis noktalar
+        Ordered points array
     """
     rect = np.zeros((4, 2), dtype=np.float32)
 
-    # Sol-ust en kucuk toplam, sag-alt en buyuk toplam
     s = pts.sum(axis=1)
     rect[0] = pts[np.argmin(s)]
     rect[2] = pts[np.argmax(s)]
 
-    # Sag-ust en kucuk fark, sol-alt en buyuk fark
     diff = np.diff(pts, axis=1)
     rect[1] = pts[np.argmin(diff)]
     rect[3] = pts[np.argmax(diff)]
@@ -250,19 +288,19 @@ def order_points(pts: np.ndarray) -> np.ndarray:
 
 def perspective_transform(image: np.ndarray, pts: np.ndarray) -> np.ndarray:
     """
-    Perspektif duzeltme uygular.
+    Apply perspective correction.
 
     Args:
-        image: BGR formatinda goruntu
-        pts: 4 kose noktasi
+        image: BGR format image
+        pts: 4 corner points
 
     Returns:
-        numpy.ndarray: Duzeltilmis goruntu
+        Corrected image
     """
     rect = order_points(pts.reshape(4, 2))
     (tl, tr, br, bl) = rect
 
-    # Yeni goruntu boyutlarini hesapla
+    # Calculate new dimensions
     widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
     widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
     maxWidth = max(int(widthA), int(widthB))
@@ -271,7 +309,7 @@ def perspective_transform(image: np.ndarray, pts: np.ndarray) -> np.ndarray:
     heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
     maxHeight = max(int(heightA), int(heightB))
 
-    # Hedef noktalar
+    # Destination points
     dst = np.array([
         [0, 0],
         [maxWidth - 1, 0],
@@ -279,7 +317,7 @@ def perspective_transform(image: np.ndarray, pts: np.ndarray) -> np.ndarray:
         [0, maxHeight - 1]
     ], dtype=np.float32)
 
-    # Perspektif donusumu
+    # Transform
     M = cv2.getPerspectiveTransform(rect, dst)
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 
@@ -288,34 +326,29 @@ def perspective_transform(image: np.ndarray, pts: np.ndarray) -> np.ndarray:
 
 def deskew(image: np.ndarray) -> np.ndarray:
     """
-    Egik goruntuyu duzeltir (skew correction).
+    Correct image skew.
 
     Args:
-        image: Gri tonlu goruntu
+        image: Grayscale image
 
     Returns:
-        numpy.ndarray: Duzeltilmis goruntu
+        Deskewed image
     """
-    # Koordinatlari bul
     coords = np.column_stack(np.where(image > 0))
 
     if len(coords) < 5:
         return image
 
-    # Minimum alan dikdortgeni bul
     angle = cv2.minAreaRect(coords)[-1]
 
-    # Aciyi duzelt
     if angle < -45:
         angle = -(90 + angle)
     else:
         angle = -angle
 
-    # Cok kucuk acilar icin dondurme yapma
-    if abs(angle) < 0.5:
+    if abs(angle) < DESKEW_MIN_ANGLE:
         return image
 
-    # Goruntuyu dondur
     (h, w) = image.shape[:2]
     center = (w // 2, h // 2)
     M = cv2.getRotationMatrix2D(center, angle, 1.0)
@@ -330,45 +363,38 @@ def deskew(image: np.ndarray) -> np.ndarray:
 
 def remove_shadows(image: np.ndarray) -> np.ndarray:
     """
-    Goruntuден golgeleri temizler.
+    Remove shadows from image.
 
     Args:
-        image: BGR formatinda goruntu
+        image: BGR format image
 
     Returns:
-        numpy.ndarray: Golgeleri temizlenmis gri tonlu goruntu
+        Shadow-free grayscale image
     """
-    # RGB kanallarini ayir
     rgb_planes = cv2.split(image)
 
     result_planes = []
     for plane in rgb_planes:
-        # Dilate ile arka plani bul
-        dilated = cv2.dilate(plane, np.ones((7, 7), np.uint8))
-        bg = cv2.medianBlur(dilated, 21)
-
-        # Arka plani cikar
+        dilated = cv2.dilate(plane, np.ones(SHADOW_KERNEL_SIZE, np.uint8))
+        bg = cv2.medianBlur(dilated, SHADOW_BLUR_SIZE)
         diff = 255 - cv2.absdiff(plane, bg)
         result_planes.append(diff)
 
-    # Kanallari birlestir ve gri tona cevir
     result = cv2.merge(result_planes)
     return cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
 
 
 def sharpen(image: np.ndarray) -> np.ndarray:
     """
-    Goruntuyu keskinlestirir.
+    Sharpen image.
 
     Args:
-        image: Gri tonlu goruntu
+        image: Grayscale image
 
     Returns:
-        numpy.ndarray: Keskinlestirilmis goruntu
+        Sharpened image
     """
-    kernel = np.array([[-1, -1, -1],
-                       [-1,  9, -1],
-                       [-1, -1, -1]])
+    kernel = np.array(SHARPEN_KERNEL)
     return cv2.filter2D(image, -1, kernel)
 
 
@@ -379,49 +405,49 @@ def preprocess_receipt(
     enhance: bool = True
 ) -> np.ndarray:
     """
-    Fis goruntusu icin optimize edilmis preprocessing pipeline.
+    Optimized preprocessing pipeline for receipts.
 
     Args:
-        image: BGR formatinda goruntu
-        detect_roi: Fis bolgesini tespit et ve kirp
-        remove_shadow: Golgeleri temizle
-        enhance: Kontrast artirma uygula
+        image: BGR format image
+        detect_roi: Detect and crop receipt region
+        remove_shadow: Remove shadows
+        enhance: Apply contrast enhancement
 
     Returns:
-        numpy.ndarray: Islenmis goruntu
+        Preprocessed image
     """
     result = image.copy()
 
-    # 1. ROI tespiti ve perspektif duzeltme
+    # 1. ROI detection and perspective correction
     if detect_roi:
         contour = detect_receipt_contour(result)
         if contour is not None:
             result = perspective_transform(result, contour)
-            print("[Preprocessing] Fis bolgesi tespit edildi, perspektif duzeltildi")
+            logger.debug("Receipt region detected, perspective corrected")
 
-    # 2. Golge temizleme
+    # 2. Shadow removal
     if remove_shadow:
         result = remove_shadows(result)
-        print("[Preprocessing] Golgeler temizlendi")
+        logger.debug("Shadows removed")
     else:
         result = to_grayscale(result)
 
-    # 3. Kontrast artirma
+    # 3. Contrast enhancement
     if enhance:
         result = enhance_contrast(result, method="clahe")
-        print("[Preprocessing] Kontrast artirildi (CLAHE)")
+        logger.debug("Contrast enhanced (CLAHE)")
 
-    # 4. Gurultu temizleme
+    # 4. Noise reduction
     result = reduce_noise(result, method="bilateral")
-    print("[Preprocessing] Gurultu temizlendi (bilateral)")
+    logger.debug("Noise reduced (bilateral)")
 
-    # 5. Keskinlestirme
+    # 5. Sharpening
     result = sharpen(result)
-    print("[Preprocessing] Keskinlestirildi")
+    logger.debug("Sharpened")
 
     # 6. Adaptive threshold
     result = apply_threshold(result, method="adaptive_gaussian")
-    print("[Preprocessing] Threshold uygulandi")
+    logger.debug("Threshold applied")
 
     return result
 
@@ -433,114 +459,22 @@ def preprocess_file(
     threshold_method: str = "adaptive"
 ) -> np.ndarray:
     """
-    Dosyadan goruntu yukler, isler ve opsiyonel olarak kaydeder.
+    Load, process, and optionally save image.
 
     Args:
-        input_path: Giris goruntusu yolu
-        output_path: Cikis goruntusu yolu (None ise kaydetmez)
-        noise_method: Gurultu temizleme yontemi
-        threshold_method: Thresholding yontemi
+        input_path: Input image path
+        output_path: Output image path (None to skip saving)
+        noise_method: Noise reduction method
+        threshold_method: Thresholding method
 
     Returns:
-        numpy.ndarray: Islenmis goruntu
+        Preprocessed image
     """
-    # Goruntuyu yukle
     image = load_image(input_path)
-
-    # Islemleri uygula
     result = preprocess(image, noise_method, threshold_method)
 
-    # Kaydet (istendiyse)
     if output_path:
         cv2.imwrite(output_path, result)
-        print(f"Islenmis goruntu kaydedildi: {output_path}")
+        logger.info(f"Saved preprocessed image: {output_path}")
 
     return result
-
-
-# Ornek kullanim
-if __name__ == "__main__":
-    import sys
-
-    print("=" * 50)
-    print("Goruntu Onisleme (Preprocessing) Modulu")
-    print("=" * 50)
-
-    # Komut satiri argumanlarindan dosya yolu al
-    if len(sys.argv) > 1:
-        input_file = sys.argv[1]
-        output_file = sys.argv[2] if len(sys.argv) > 2 else "output_processed.png"
-
-        try:
-            # Goruntuyu isle
-            result = preprocess_file(
-                input_path=input_file,
-                output_path=output_file,
-                noise_method="gaussian",
-                threshold_method="adaptive"
-            )
-            print(f"Basarili! Goruntu boyutu: {result.shape}")
-
-        except Exception as e:
-            print(f"Hata: {e}")
-            sys.exit(1)
-
-    else:
-        # Kullanim ornekleri goster
-        print("\nKullanim:")
-        print("-" * 50)
-        print("python preprocessing.py <giris_resmi> [cikis_resmi]")
-        print("\nOrnek:")
-        print("  python preprocessing.py fatura.jpg islenmis.png")
-
-        print("\n" + "=" * 50)
-        print("Kod Icinden Kullanim Ornekleri:")
-        print("=" * 50)
-
-        print("""
-# Temel kullanim
-from preprocessing import load_image, preprocess
-
-image = load_image("fatura.jpg")
-result = preprocess(image)
-
-# Ozel ayarlarla kullanim
-result = preprocess(
-    image,
-    noise_method="bilateral",      # Kenarlari koruyarak gurultu temizle
-    threshold_method="otsu"        # Otsu threshold kullan
-)
-
-# Dosya bazli kullanim
-from preprocessing import preprocess_file
-
-result = preprocess_file(
-    input_path="fatura.jpg",
-    output_path="islenmis.png"
-)
-
-# Adim adim kullanim
-from preprocessing import to_grayscale, reduce_noise, apply_threshold
-
-image = load_image("fatura.jpg")
-gray = to_grayscale(image)
-denoised = reduce_noise(gray, method="gaussian")
-final = apply_threshold(denoised, method="adaptive")
-""")
-
-        print("=" * 50)
-        print("Mevcut Yontemler:")
-        print("=" * 50)
-        print("""
-Gurultu Temizleme (noise_method):
-  - gaussian  : Hizli, genel amacli
-  - median    : Tuz-biber gurultusu icin
-  - bilateral : Kenarlari korur
-  - nlm       : En iyi kalite (yavas)
-
-Thresholding (threshold_method):
-  - binary           : Sabit esik degeri (127)
-  - otsu             : Otomatik esik hesaplama
-  - adaptive         : Degisken aydinlatma icin
-  - adaptive_gaussian: Gaussian adaptive (onerilen)
-""")

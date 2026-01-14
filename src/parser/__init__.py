@@ -1,31 +1,26 @@
 """
-Receipt Parser Module (Backwards Compatibility Layer)
-
-This module re-exports functions from the refactored parser package
-for backwards compatibility.
-
-For new code, use:
-    from parser import parse_receipt, clean_ocr_text, ...
+Receipt Parser Module
+Extracts structured data from OCR output.
 """
 
-# Re-export all functions from parser package
-from parser import (
-    parse_receipt,
+from .receipt import parse_receipt
+from .cleaner import (
     clean_ocr_text,
     clean_business_name,
     clean_product_name,
     clean_date_string,
-    clean_time_string,
+    clean_time_string
+)
+from .extractor import (
     extract_date,
     extract_time,
     extract_amount,
     extract_business_name,
     extract_currency,
     extract_payment_method,
-    extract_transaction_type,
-    extract_items
+    extract_transaction_type
 )
-from parser.receipt import to_json, clean_none_values
+from .item_parser import extract_items
 
 __all__ = [
     'parse_receipt',
@@ -41,7 +36,5 @@ __all__ = [
     'extract_currency',
     'extract_payment_method',
     'extract_transaction_type',
-    'extract_items',
-    'to_json',
-    'clean_none_values'
+    'extract_items'
 ]

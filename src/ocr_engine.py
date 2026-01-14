@@ -1,6 +1,6 @@
 """
-OCR Engine Modulu
-EasyOCR kullanarak goruntu uzerinden metin cikarma islemleri.
+OCR Engine Module
+Text extraction from images using EasyOCR.
 """
 
 import easyocr
@@ -8,43 +8,45 @@ import numpy as np
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+from utils.logger import get_logger
+from constants import DEFAULT_LANGUAGES, DEFAULT_GPU
+
+logger = get_logger(__name__)
+
 
 class OCREngine:
-    """EasyOCR tabanli OCR motoru."""
+    """EasyOCR-based OCR engine."""
 
-    def __init__(self, languages: List[str] = None, gpu: bool = False):
+    def __init__(self, languages: List[str] = None, gpu: bool = None):
         """
-        OCR motorunu baslatir.
+        Initialize OCR engine.
 
         Args:
-            languages: Desteklenecek diller listesi (varsayilan: Turkce ve Ingilizce)
-            gpu: GPU kullanimi (varsayilan: False)
+            languages: Languages to support (default: Turkish and English)
+            gpu: Enable GPU (default: False)
         """
-        if languages is None:
-            languages = ['tr', 'en']
-
-        self.languages = languages
-        self.gpu = gpu
+        self.languages = languages or DEFAULT_LANGUAGES
+        self.gpu = gpu if gpu is not None else DEFAULT_GPU
         self.reader = None
 
     def _ensure_reader(self):
-        """Reader'in yuklenmesini saglar (lazy loading)."""
+        """Lazy load the OCR reader."""
         if self.reader is None:
-            print(f"EasyOCR yukleniyor (diller: {self.languages})...")
+            logger.info(f"Loading EasyOCR (languages: {self.languages})...")
             self.reader = easyocr.Reader(self.languages, gpu=self.gpu)
-            print("EasyOCR hazir.")
+            logger.info("EasyOCR ready.")
 
     def extract_text(self, image: np.ndarray, detail: bool = False) -> Any:
         """
-        Goruntu uzerinden metin cikarir.
+        Extract text from image.
 
         Args:
-            image: numpy array formatinda goruntu
-            detail: True ise konum bilgisi ile birlikte dondurur
+            image: Image as numpy array
+            detail: Return position info if True
 
         Returns:
-            detail=False: Sadece metin (string)
-            detail=True: Liste [(bbox, text, confidence), ...]
+            detail=False: Text string
+            detail=True: List [(bbox, text, confidence), ...]
         """
         self._ensure_reader()
 
@@ -53,7 +55,6 @@ class OCREngine:
         if detail:
             return results
 
-        # Sadece metinleri birlestir
         texts = [item[1] for item in results]
         return '\n'.join(texts)
 
@@ -63,19 +64,19 @@ class OCREngine:
         detail: bool = False
     ) -> Any:
         """
-        Dosyadan goruntu yukleyip metin cikarir.
+        Extract text from image file.
 
         Args:
-            image_path: Goruntu dosyasinin yolu
-            detail: True ise konum bilgisi ile birlikte dondurur
+            image_path: Path to image file
+            detail: Return position info if True
 
         Returns:
-            detail=False: Sadece metin (string)
-            detail=True: Liste [(bbox, text, confidence), ...]
+            detail=False: Text string
+            detail=True: List [(bbox, text, confidence), ...]
         """
         path = Path(image_path)
         if not path.exists():
-            raise FileNotFoundError(f"Dosya bulunamadi: {image_path}")
+            raise FileNotFoundError(f"File not found: {image_path}")
 
         self._ensure_reader()
 
@@ -89,15 +90,15 @@ class OCREngine:
 
     def extract_structured(self, image: np.ndarray) -> Dict[str, Any]:
         """
-        Goruntuden yapilandirilmis veri cikarir.
+        Extract structured data from image.
 
         Args:
-            image: numpy array formatinda goruntu
+            image: Image as numpy array
 
         Returns:
             Dict: {
                 'raw_text': str,
-                'lines': List[Dict],  # Her satir icin {text, confidence, bbox}
+                'lines': List[Dict],
                 'confidence_avg': float
             }
         """
@@ -125,12 +126,12 @@ class OCREngine:
         }
 
 
-# Modul seviyesinde kullanim icin varsayilan instance
+# Module-level default instance
 _default_engine: Optional[OCREngine] = None
 
 
 def get_engine() -> OCREngine:
-    """Varsayilan OCR motorunu dondurur."""
+    """Get default OCR engine instance."""
     global _default_engine
     if _default_engine is None:
         _default_engine = OCREngine()
@@ -139,79 +140,13 @@ def get_engine() -> OCREngine:
 
 def extract_text(image_path: str) -> str:
     """
-    Basit kullanim icin fonksiyon.
+    Simple function for text extraction.
 
     Args:
-        image_path: Goruntu dosyasinin yolu
+        image_path: Path to image file
 
     Returns:
-        str: Cikartilan metin
+        Extracted text
     """
     engine = get_engine()
     return engine.extract_text_from_file(image_path)
-
-
-# Ornek kullanim
-if __name__ == "__main__":
-    import sys
-
-    print("=" * 50)
-    print("OCR Engine - EasyOCR")
-    print("=" * 50)
-
-    if len(sys.argv) > 1:
-        image_file = sys.argv[1]
-
-        try:
-            # OCR motoru olustur
-            engine = OCREngine(languages=['tr', 'en'], gpu=False)
-
-            # Detayli sonuc al
-            result = engine.extract_text_from_file(image_file, detail=True)
-
-            print(f"\nDosya: {image_file}")
-            print("-" * 50)
-            print("CIKARTILAN METIN:")
-            print("-" * 50)
-
-            for bbox, text, confidence in result:
-                conf_percent = confidence * 100
-                print(f"[%{conf_percent:.1f}] {text}")
-
-            print("-" * 50)
-            print("\nTAM METIN:")
-            print("-" * 50)
-            full_text = '\n'.join([item[1] for item in result])
-            print(full_text)
-
-        except Exception as e:
-            print(f"Hata: {e}")
-            sys.exit(1)
-    else:
-        print("\nKullanim:")
-        print("-" * 50)
-        print("python ocr_engine.py <goruntu_dosyasi>")
-        print("\nOrnek:")
-        print("  python ocr_engine.py fatura.jpg")
-        print("  python ocr_engine.py fis_processed.png")
-
-        print("\n" + "=" * 50)
-        print("Kod Icinden Kullanim:")
-        print("=" * 50)
-        print("""
-# Basit kullanim
-from ocr_engine import extract_text
-
-text = extract_text("fatura.jpg")
-print(text)
-
-# Detayli kullanim
-from ocr_engine import OCREngine
-
-engine = OCREngine(languages=['tr', 'en'])
-result = engine.extract_structured(image)
-
-print(f"Ortalama guven: {result['confidence_avg']:.2%}")
-for line in result['lines']:
-    print(f"{line['text']} ({line['confidence']:.2%})")
-""")
