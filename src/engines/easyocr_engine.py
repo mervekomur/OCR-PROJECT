@@ -101,18 +101,22 @@ class EasyOCREngine(BaseOCREngine):
 
         text_upper = text.upper()
 
-        # Extract date
+        # Extract date - multiple formats supported
         date_patterns = [
-            r'(\d{2}[/.-]\d{2}[/.-]\d{4})',
-            r'(\d{2}[/.-]\d{2}[/.-]\d{2})',
+            r'(\d{2}[/.\-]\d{2}[/.\-]\d{4})',      # DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY
+            r'(\d{2}[/.\-]\d{2}[/.\-]\d{2})',      # DD/MM/YY, DD.MM.YY, DD-MM-YY
+            r'(\d{2}\s+\d{2}\s+\d{4})',            # DD MM YYYY (space separated)
+            r'(\d{2}\s+\d{2}\s+\d{2})',            # DD MM YY (space separated)
+            r'(\d{4}[/.\-]\d{2}[/.\-]\d{2})',      # YYYY/MM/DD, YYYY.MM.DD
+            r'Tarih[:\s]*(\d{2}[/.\-\s]\d{2}[/.\-\s]\d{2,4})',  # Tarih: DD.MM.YY
         ]
         for pattern in date_patterns:
-            match = re.search(pattern, text)
+            match = re.search(pattern, text, re.IGNORECASE)
             if match:
-                fields['date'] = match.group(1)
-                # Find confidence for this line
+                date_str = match.group(match.lastindex)
+                fields['date'] = date_str.strip()
                 for line in lines:
-                    if match.group(1) in line['text']:
+                    if date_str in line['text']:
                         fields['date_confidence'] = line['confidence']
                         break
                 break
