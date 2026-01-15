@@ -2,6 +2,7 @@
 EasyOCR Engine Implementation
 """
 
+import cv2
 from typing import List, Dict, Any
 import sys
 from pathlib import Path
@@ -9,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.logger import get_logger
+from preprocessing import document_scan_preprocess
 from .base import BaseOCREngine, OCRResult
 
 logger = get_logger(__name__)
@@ -50,8 +52,17 @@ class EasyOCREngine(BaseOCREngine):
         logger.info("EasyOCR ready.")
 
     def _extract_text(self, image_path: str) -> OCRResult:
-        """Extract text using EasyOCR."""
-        results = self._model.readtext(image_path)
+        """Extract text using EasyOCR with document scanning preprocessing."""
+        # Apply document scanning preprocessing
+        image = cv2.imread(image_path)
+        if image is None:
+            raise ValueError(f"Cannot read image: {image_path}")
+
+        preprocessed = document_scan_preprocess(image)
+        logger.debug("Document scanning preprocessing applied")
+
+        # Run OCR on preprocessed image
+        results = self._model.readtext(preprocessed)
 
         lines = []
         total_confidence = 0.0

@@ -177,26 +177,36 @@ def extract_amount(text: str, keywords: List[str]) -> Optional[float]:
     Returns:
         Amount as float or None
     """
+    all_amounts = []
+
     for keyword in keywords:
         patterns = [
             # TOTAL € 24,90 or TOTAL: €24.90
-            rf'{keyword}\s*[:.]?\s*[€$£₺]?\s*(\d+[.,]\d{{2}})',
+            rf'{keyword}\s*[:.]?\s*[€$£₺]?\s*(\d+[.,]\d{{1,2}})',
             # € 24,90 TOTAL
-            rf'[€$£₺]\s*(\d+[.,]\d{{2}})\s*{keyword}',
-            # TOTAL *242,00 (Turkish receipts)
-            rf'{keyword}\s*[:.]?\s*\*?(\d+[.,]\d{{2}})',
+            rf'[€$£₺]\s*(\d+[.,]\d{{1,2}})\s*{keyword}',
+            # TOTAL *242,00 (Turkish receipts with asterisk)
+            rf'{keyword}\s*[:.]?\s*\*?(\d+[.,]\d{{1,2}})',
+            # TOTAL with newline then amount (e.g., TOPLAM\n240.30)
+            rf'{keyword}\s*\n\s*\.?(\d+[.,]\d{{1,2}})',
+            # Amount starting with dot (OCR artifact): .240.30
+            rf'{keyword}\s*[:.]?\s*\.(\d+[.,]\d{{1,2}})',
             # TOTAL 242
             rf'{keyword}\s*[:.]?\s*\*?(\d+)',
         ]
 
         for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                amount_str = match.group(1).replace(',', '.')
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            for match_str in matches:
+                amount_str = match_str.replace(',', '.')
                 try:
-                    return float(amount_str)
+                    all_amounts.append(float(amount_str))
                 except ValueError:
                     continue
+
+    # Return the largest amount found (usually the total)
+    if all_amounts:
+        return max(all_amounts)
 
     # Fallback: look for Euro amounts
     euro_pattern = r'[€]\s*(\d+[.,;:]\d{2})'

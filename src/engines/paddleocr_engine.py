@@ -2,6 +2,7 @@
 PaddleOCR Engine Implementation
 """
 
+import cv2
 from typing import List, Dict, Any
 import sys
 from pathlib import Path
@@ -9,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.logger import get_logger
+from preprocessing import document_scan_preprocess
 from .base import BaseOCREngine, OCRResult
 
 logger = get_logger(__name__)
@@ -67,8 +69,17 @@ class PaddleOCREngine(BaseOCREngine):
         logger.info("PaddleOCR ready (CPU mode).")
 
     def _extract_text(self, image_path: str) -> OCRResult:
-        """Extract text using PaddleOCR."""
-        results = self._model.ocr(image_path, cls=True)
+        """Extract text using PaddleOCR with document scanning preprocessing."""
+        # Apply document scanning preprocessing
+        image = cv2.imread(image_path)
+        if image is None:
+            raise ValueError(f"Cannot read image: {image_path}")
+
+        preprocessed = document_scan_preprocess(image)
+        logger.debug("Document scanning preprocessing applied")
+
+        # Run OCR on preprocessed image
+        results = self._model.ocr(preprocessed, cls=True)
 
         lines = []
         total_confidence = 0.0
@@ -166,21 +177,40 @@ class PaddleOCREngine(BaseOCREngine):
             r'TUTAR[\s\n]*[:.]?\s*(\d+[.,]\d{1,2})',
             r'(\d+[.,]\d{1,2})\s*TL',                       # 1000.70 TL format
         ]
+
+        # Find all matches and return the largest (most likely the total)
+        all_totals = []
         for pattern in total_patterns:
-            match = re.search(pattern, text_upper)
-            if match:
-                total_str = match.group(1).replace(',', '.')
-                # Remove trailing dot if exists
-                total_str = total_str.rstrip('.')
+            matches = re.findall(pattern, text_upper)
+            for match_str in matches:
+                total_str = match_str.replace(',', '.').rstrip('.')
                 try:
-                    fields['total'] = float(total_str)
-                    for line in lines:
-                        if 'TOPLAM' in line['text'].upper() or 'TOTAL' in line['text'].upper():
-                            fields['total_confidence'] = line['confidence']
-                            break
-                    break
+                    all_totals.append(float(total_str))
                 except ValueError:
                     continue
+
+        # Also look for amounts near TOPLAM keyword (within next 3 lines)
+        lines_list = text.split('\n')
+        for i, line in enumerate(lines_list):
+            if 'TOPLAM' in line.upper():
+                # Check this line and next 3 lines for amounts
+                for j in range(i, min(i + 4, len(lines_list))):
+                    # Match amounts including those starting with dot (.240.30)
+                    amount_matches = re.findall(r'\.?(\d+[.,]\d{1,2})', lines_list[j])
+                    for match_str in amount_matches:
+                        total_str = match_str.replace(',', '.').rstrip('.')
+                        try:
+                            all_totals.append(float(total_str))
+                        except ValueError:
+                            continue
+                break
+
+        if all_totals:
+            fields['total'] = max(all_totals)
+            for line in lines:
+                if 'TOPLAM' in line['text'].upper() or 'TOTAL' in line['text'].upper():
+                    fields['total_confidence'] = line['confidence']
+                    break
 
         # Extract merchant - skip serial numbers and metadata
         merchant_blacklist = ['SERI', 'SIRA', 'NO:', 'NO.', 'ABS', 'FIS', 'FİŞ',

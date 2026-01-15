@@ -452,6 +452,65 @@ def preprocess_receipt(
     return result
 
 
+def document_scan_preprocess(image: np.ndarray) -> np.ndarray:
+    """
+    Standard document scanning preprocessing pipeline.
+    Simulates CamScanner-like document enhancement.
+
+    Pipeline:
+        1. Grayscale conversion
+        2. Gaussian blur (noise reduction)
+        3. Adaptive thresholding (shadow removal, text enhancement)
+
+    Args:
+        image: BGR format image (or grayscale)
+
+    Returns:
+        Preprocessed binary image optimized for OCR
+    """
+    # Step 1: Convert to grayscale
+    gray = to_grayscale(image)
+    logger.debug("Document scan: Converted to grayscale")
+
+    # Step 2: Apply Gaussian blur for noise reduction
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    logger.debug("Document scan: Applied Gaussian blur")
+
+    # Step 3: Adaptive thresholding for shadow removal and text enhancement
+    binary = cv2.adaptiveThreshold(
+        blurred,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        11,
+        2
+    )
+    logger.debug("Document scan: Applied adaptive thresholding")
+
+    return binary
+
+
+def document_scan_preprocess_file(input_path: str, output_path: str = None) -> np.ndarray:
+    """
+    Load image, apply document scanning preprocessing, optionally save.
+
+    Args:
+        input_path: Input image path
+        output_path: Output image path (None to skip saving)
+
+    Returns:
+        Preprocessed image
+    """
+    image = load_image(input_path)
+    result = document_scan_preprocess(image)
+
+    if output_path:
+        cv2.imwrite(output_path, result)
+        logger.info(f"Saved document-scanned image: {output_path}")
+
+    return result
+
+
 def preprocess_file(
     input_path: str,
     output_path: str = None,
