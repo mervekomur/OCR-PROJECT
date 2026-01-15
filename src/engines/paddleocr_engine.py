@@ -22,13 +22,13 @@ class PaddleOCREngine(BaseOCREngine):
     name = "paddleocr"
     description = "PaddleOCR - High accuracy multi-language OCR by Baidu"
 
-    def __init__(self, lang: str = 'tr', preprocess: bool = True):
+    def __init__(self, lang: str = 'tr', preprocess: bool = False):
         """
         Initialize PaddleOCR engine (CPU mode).
 
         Args:
             lang: Language code ('tr', 'en', 'fr', etc.)
-            preprocess: Apply document scanning preprocessing (default: True)
+            preprocess: Apply document scanning preprocessing (default: False)
         """
         super().__init__()
         self.lang = lang

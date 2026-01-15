@@ -22,14 +22,14 @@ class EasyOCREngine(BaseOCREngine):
     name = "easyocr"
     description = "EasyOCR - Multi-language OCR with good Turkish support"
 
-    def __init__(self, languages: List[str] = None, gpu: bool = False, preprocess: bool = True):
+    def __init__(self, languages: List[str] = None, gpu: bool = False, preprocess: bool = False):
         """
         Initialize EasyOCR engine.
 
         Args:
             languages: Languages to support (default: ['tr', 'en'])
             gpu: Enable GPU acceleration
-            preprocess: Apply document scanning preprocessing (default: True)
+            preprocess: Apply document scanning preprocessing (default: False)
         """
         super().__init__()
         self.languages = languages or ['tr', 'en']

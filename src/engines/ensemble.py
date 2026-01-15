@@ -55,14 +55,14 @@ class EnsembleOCR:
         'got-ocr': GOTOCREngine
     }
 
-    def __init__(self, engines: List[str] = None, preprocess: bool = True):
+    def __init__(self, engines: List[str] = None, preprocess: bool = False):
         """
         Initialize ensemble manager.
 
         Args:
             engines: List of engine names to use.
                     If None, uses all available engines.
-            preprocess: Apply document scanning preprocessing (default: True)
+            preprocess: Apply document scanning preprocessing (default: False)
         """
         self.engines: Dict[str, BaseOCREngine] = {}
         self.preprocess = preprocess
@@ -319,7 +319,7 @@ def compare_engines(
     image_path: str,
     engines: List[str] = None,
     show_table: bool = True,
-    preprocess: bool = True
+    preprocess: bool = False
 ) -> ComparisonResult:
     """
     Convenience function to compare OCR engines on an image.
@@ -328,7 +328,7 @@ def compare_engines(
         image_path: Path to image file
         engines: List of engine names (None = all available)
         show_table: Print comparison table to terminal
-        preprocess: Apply document scanning preprocessing (default: True)
+        preprocess: Apply document scanning preprocessing (default: False)
 
     Returns:
         ComparisonResult with all results

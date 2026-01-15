@@ -37,7 +37,7 @@ def main():
 
         # Check for flags
         args = sys.argv[2:]
-        preprocess = '--no-preprocess' not in args
+        preprocess = '--preprocess' in args
         save_json = '--json' in args
 
         # Filter out flags to get engines
@@ -55,8 +55,8 @@ def main():
             preprocess=preprocess
         )
 
-        if not preprocess:
-            print("\n[INFO] Preprocessing disabled")
+        if preprocess:
+            print("\n[INFO] Preprocessing enabled")
 
         # Optionally save to JSON
         if save_json:
@@ -67,18 +67,18 @@ def main():
 
     else:
         print("\nUsage:")
-        print("  python ensemble_demo.py <image_file> [engines] [--no-preprocess] [--json]")
+        print("  python ensemble_demo.py <image_file> [engines] [--preprocess] [--json]")
         print()
         print("Arguments:")
-        print("  image_file      : Path to receipt image")
-        print("  engines         : Comma-separated engine names (optional)")
-        print("  --no-preprocess : Disable document scanning preprocessing")
-        print("  --json          : Save results to JSON file")
+        print("  image_file   : Path to receipt image")
+        print("  engines      : Comma-separated engine names (optional)")
+        print("  --preprocess : Enable document scanning preprocessing (disabled by default)")
+        print("  --json       : Save results to JSON file")
         print()
         print("Examples:")
         print("  python ensemble_demo.py ../data/fis1.jpg")
         print("  python ensemble_demo.py ../data/fis1.jpg easyocr,paddleocr")
-        print("  python ensemble_demo.py ../data/fis1.jpg --no-preprocess")
+        print("  python ensemble_demo.py ../data/fis1.jpg --preprocess")
         print("  python ensemble_demo.py ../data/fis1.jpg easyocr --json")
         print()
         print("Available engines:")
