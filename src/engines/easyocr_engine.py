@@ -22,17 +22,19 @@ class EasyOCREngine(BaseOCREngine):
     name = "easyocr"
     description = "EasyOCR - Multi-language OCR with good Turkish support"
 
-    def __init__(self, languages: List[str] = None, gpu: bool = False):
+    def __init__(self, languages: List[str] = None, gpu: bool = False, preprocess: bool = True):
         """
         Initialize EasyOCR engine.
 
         Args:
             languages: Languages to support (default: ['tr', 'en'])
             gpu: Enable GPU acceleration
+            preprocess: Apply document scanning preprocessing (default: True)
         """
         super().__init__()
         self.languages = languages or ['tr', 'en']
         self.gpu = gpu
+        self.preprocess = preprocess
 
     @classmethod
     def _check_availability(cls) -> bool:
@@ -52,17 +54,18 @@ class EasyOCREngine(BaseOCREngine):
         logger.info("EasyOCR ready.")
 
     def _extract_text(self, image_path: str) -> OCRResult:
-        """Extract text using EasyOCR with document scanning preprocessing."""
-        # Apply document scanning preprocessing
+        """Extract text using EasyOCR with optional preprocessing."""
+        # Always read image with OpenCV for consistency
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError(f"Cannot read image: {image_path}")
 
-        preprocessed = document_scan_preprocess(image)
-        logger.debug("Document scanning preprocessing applied")
+        if self.preprocess:
+            # Apply document scanning preprocessing
+            image = document_scan_preprocess(image)
+            logger.debug("Document scanning preprocessing applied")
 
-        # Run OCR on preprocessed image
-        results = self._model.readtext(preprocessed)
+        results = self._model.readtext(image)
 
         lines = []
         total_confidence = 0.0

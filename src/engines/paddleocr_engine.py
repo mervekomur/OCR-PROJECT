@@ -22,15 +22,17 @@ class PaddleOCREngine(BaseOCREngine):
     name = "paddleocr"
     description = "PaddleOCR - High accuracy multi-language OCR by Baidu"
 
-    def __init__(self, lang: str = 'tr'):
+    def __init__(self, lang: str = 'tr', preprocess: bool = True):
         """
         Initialize PaddleOCR engine (CPU mode).
 
         Args:
             lang: Language code ('tr', 'en', 'fr', etc.)
+            preprocess: Apply document scanning preprocessing (default: True)
         """
         super().__init__()
         self.lang = lang
+        self.preprocess = preprocess
         self._paddle_available = None
 
     @classmethod
@@ -69,17 +71,18 @@ class PaddleOCREngine(BaseOCREngine):
         logger.info("PaddleOCR ready (CPU mode).")
 
     def _extract_text(self, image_path: str) -> OCRResult:
-        """Extract text using PaddleOCR with document scanning preprocessing."""
-        # Apply document scanning preprocessing
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ValueError(f"Cannot read image: {image_path}")
-
-        preprocessed = document_scan_preprocess(image)
-        logger.debug("Document scanning preprocessing applied")
-
-        # Run OCR on preprocessed image
-        results = self._model.ocr(preprocessed, cls=True)
+        """Extract text using PaddleOCR with optional preprocessing."""
+        if self.preprocess:
+            # Apply document scanning preprocessing
+            image = cv2.imread(image_path)
+            if image is None:
+                raise ValueError(f"Cannot read image: {image_path}")
+            preprocessed = document_scan_preprocess(image)
+            logger.debug("Document scanning preprocessing applied")
+            results = self._model.ocr(preprocessed, cls=True)
+        else:
+            # Use original image directly
+            results = self._model.ocr(image_path, cls=True)
 
         lines = []
         total_confidence = 0.0

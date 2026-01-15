@@ -35,20 +35,31 @@ def main():
     if len(sys.argv) > 1:
         image_path = sys.argv[1]
 
-        # Optional: specify engines
+        # Check for flags
+        args = sys.argv[2:]
+        preprocess = '--no-preprocess' not in args
+        save_json = '--json' in args
+
+        # Filter out flags to get engines
         engines = None
-        if len(sys.argv) > 2:
-            engines = sys.argv[2].split(',')
+        for arg in args:
+            if not arg.startswith('--'):
+                engines = arg.split(',')
+                break
 
         # Run comparison
         result = compare_engines(
             image_path,
             engines=engines,
-            show_table=True
+            show_table=True,
+            preprocess=preprocess
         )
 
+        if not preprocess:
+            print("\n[INFO] Preprocessing disabled")
+
         # Optionally save to JSON
-        if len(sys.argv) > 3 and sys.argv[3] == '--json':
+        if save_json:
             output_file = 'comparison_result.json'
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(ensemble.to_json(result), f, ensure_ascii=False, indent=2)
@@ -56,16 +67,18 @@ def main():
 
     else:
         print("\nUsage:")
-        print("  python ensemble_demo.py <image_file> [engines] [--json]")
+        print("  python ensemble_demo.py <image_file> [engines] [--no-preprocess] [--json]")
         print()
         print("Arguments:")
-        print("  image_file  : Path to receipt image")
-        print("  engines     : Comma-separated engine names (optional)")
-        print("  --json      : Save results to JSON file")
+        print("  image_file      : Path to receipt image")
+        print("  engines         : Comma-separated engine names (optional)")
+        print("  --no-preprocess : Disable document scanning preprocessing")
+        print("  --json          : Save results to JSON file")
         print()
         print("Examples:")
         print("  python ensemble_demo.py ../data/fis1.jpg")
         print("  python ensemble_demo.py ../data/fis1.jpg easyocr,paddleocr")
+        print("  python ensemble_demo.py ../data/fis1.jpg --no-preprocess")
         print("  python ensemble_demo.py ../data/fis1.jpg easyocr --json")
         print()
         print("Available engines:")

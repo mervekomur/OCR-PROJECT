@@ -55,15 +55,17 @@ class EnsembleOCR:
         'got-ocr': GOTOCREngine
     }
 
-    def __init__(self, engines: List[str] = None):
+    def __init__(self, engines: List[str] = None, preprocess: bool = True):
         """
         Initialize ensemble manager.
 
         Args:
             engines: List of engine names to use.
                     If None, uses all available engines.
+            preprocess: Apply document scanning preprocessing (default: True)
         """
         self.engines: Dict[str, BaseOCREngine] = {}
+        self.preprocess = preprocess
         self._initialize_engines(engines)
 
     def _initialize_engines(self, engine_names: List[str] = None) -> None:
@@ -80,7 +82,7 @@ class EnsembleOCR:
 
             if engine_class.is_available():
                 try:
-                    self.engines[name] = engine_class()
+                    self.engines[name] = engine_class(preprocess=self.preprocess)
                     logger.info(f"Engine registered: {name}")
                 except Exception as e:
                     logger.error(f"Failed to create engine {name}: {e}")
@@ -316,7 +318,8 @@ class EnsembleOCR:
 def compare_engines(
     image_path: str,
     engines: List[str] = None,
-    show_table: bool = True
+    show_table: bool = True,
+    preprocess: bool = True
 ) -> ComparisonResult:
     """
     Convenience function to compare OCR engines on an image.
@@ -325,11 +328,12 @@ def compare_engines(
         image_path: Path to image file
         engines: List of engine names (None = all available)
         show_table: Print comparison table to terminal
+        preprocess: Apply document scanning preprocessing (default: True)
 
     Returns:
         ComparisonResult with all results
     """
-    ensemble = EnsembleOCR(engines=engines)
+    ensemble = EnsembleOCR(engines=engines, preprocess=preprocess)
     result = ensemble.process(image_path, engines=engines)
 
     if show_table:
