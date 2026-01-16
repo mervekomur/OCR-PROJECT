@@ -30,3 +30,5 @@ Thumbs.db
 # Temp files
 tmpclaude-*
 nul
+*.jpg
+*.png
