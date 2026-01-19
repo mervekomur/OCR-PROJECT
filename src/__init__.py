@@ -1,17 +1,29 @@
+# -*- coding: utf-8 -*-
 """
-OCR Receipt Parser Package
+OCR Project - SAM tabanlı fiş/belge tespiti
+
+Kullanım:
+    from src import detect_receipt, detect_and_save
+
+    # Tek satırda tespit
+    result = detect_receipt("path/to/image.jpg")
+
+    # Tespit ve kaydet
+    result = detect_and_save("path/to/image.jpg", "output/")
 """
 
-from .ocr_engine import OCREngine, extract_text, get_engine
-from .preprocessing import preprocess, preprocess_file, preprocess_receipt
-from .parser import parse_receipt
+from src.sam_detector import (
+    ReceiptDetector,
+    detect_receipt,
+    detect_and_save,
+    get_detector
+)
 
 __all__ = [
-    'OCREngine',
-    'extract_text',
-    'get_engine',
-    'preprocess',
-    'preprocess_file',
-    'preprocess_receipt',
-    'parse_receipt'
+    'ReceiptDetector',
+    'detect_receipt',
+    'detect_and_save',
+    'get_detector'
 ]
+
+__version__ = '2.0.0'
