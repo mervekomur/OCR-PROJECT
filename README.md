@@ -12,6 +12,20 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+### SAM Model (Fiş Tespiti)
+
+Fiş/belge segmentasyonu için SAM modelini indirin (~375MB):
+
+```bash
+curl -L -o sam_vit_b.pth https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth
+```
+
+Veya PowerShell ile:
+
+```powershell
+Invoke-WebRequest -Uri "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth" -OutFile "sam_vit_b.pth"
+```
+
 ### Ek OCR Motorları
 
 ```bash
@@ -20,9 +34,28 @@ pip install paddlepaddle paddleocr
 
 # Donut & GOT-OCR
 pip install torch transformers
+
+# SAM (Segment Anything)
+pip install segment-anything
 ```
 
 ## Kullanım
+
+### Fiş Tespiti (SAM)
+
+```python
+from src import detect_receipt, detect_and_save
+
+# Hızlı tespit
+result = detect_receipt("data/fis1.jpeg")
+if result['success']:
+    print(f"Köşeler: {result['corners']}")
+    print(f"Alan: {result['area']}")
+
+# Tespit ve kaydet
+result = detect_and_save("data/fis1.jpeg", "output/")
+# Çıktılar: fis1_sam_result.jpg, fis1_sam_cropped.jpg, fis1_sam_mask.jpg
+```
 
 ### Tek Motor
 
@@ -83,8 +116,7 @@ src/
 │   ├── cleaner.py
 │   ├── extractor.py
 │   └── item_parser.py
-├── utils/               # Yardımcı modüller
-│   └── logger.py
+├── sam_detector.py      # SAM tabanlı fiş/belge tespiti
 ├── constants.py         # Sabitler
 ├── preprocessing.py     # Görüntü ön işleme
 └── batch_processor.py   # Toplu işleme
@@ -93,7 +125,8 @@ src/
 ## Teknolojiler
 
 - Python 3.10+
+- SAM (Segment Anything Model) - Fiş/belge tespiti
 - EasyOCR / PaddleOCR / Donut / GOT-OCR
 - OpenCV
 - Pillow
-- PyTorch & Transformers (Donut, GOT-OCR için)
+- PyTorch & Transformers
