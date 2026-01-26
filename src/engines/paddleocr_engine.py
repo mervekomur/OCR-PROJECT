@@ -61,14 +61,32 @@ class PaddleOCREngine(BaseOCREngine):
         # Turkish not directly supported, use English model
         paddle_lang = self.lang if self.lang in ['en', 'ch', 'fr', 'german', 'korean', 'japan'] else 'en'
 
-        # Initialize with CPU mode explicitly
+        # Initialize with optimized parameters for receipts
         self._model = PaddleOCR(
-            use_angle_cls=True,  # Enable text angle classification
+            # Language
             lang=paddle_lang,
-            use_gpu=False,       # Force CPU mode
-            show_log=False       # Suppress verbose logging
+
+            # Detection parameters
+            det_db_thresh=0.25,         # Lower threshold = detect faded text
+            det_db_box_thresh=0.6,      # Higher threshold = fewer false positives
+            det_db_unclip_ratio=1.75,   # Expand boxes to capture full words
+
+            # Recognition parameters
+            rec_batch_num=6,            # Process 6 lines at once (faster)
+            drop_score=0.4,             # Filter out garbage detections
+
+            # Text handling
+            use_angle_cls=True,         # Handle rotated receipts
+            use_dilation=True,          # Better spacing detection
+
+            # Performance
+            use_gpu=False,              # CPU mode
+            show_log=False,             # Clean output
+
+            # Image processing
+            det_limit_side_len=960,     # Scale large images
         )
-        logger.info("PaddleOCR ready (CPU mode).")
+        logger.info("PaddleOCR ready (CPU mode, receipt-optimized).")
 
     def _extract_text(self, image_path: str) -> OCRResult:
         """Extract text using PaddleOCR with optional preprocessing."""
