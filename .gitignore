@@ -2,7 +2,7 @@
 data/
 input/
 output/
-*.json
+# *.json - ground_truth.json ve evaluation sonuclari icin kaldirildi
 
 # Python
 __pycache__/

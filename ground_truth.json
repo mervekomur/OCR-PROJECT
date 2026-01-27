@@ -1,0 +1,409 @@
+{
+  "meta": {
+    "olusturma_tarihi": "2025-01-27",
+    "olusturan": "Claude",
+    "aciklama": "OCR evaluation icin ground truth verisi. '???' olan alanlar manuel kontrol gerektirir.",
+    "toplam_dosya": 28,
+    "alanlar": ["tarih", "toplam", "kdv", "vergi_no", "market_adi", "urunler", "para_birimi"]
+  },
+  "fisler": {
+    "makbuz1.png": {
+      "market_adi": "Halil Nalcakan",
+      "tarih": "19/06/2024",
+      "toplam": 980.00,
+      "kdv": null,
+      "vergi_no": "14654556332",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Taksi Ucreti (Gebze-SAW)", "tutar": 980.00}
+      ],
+      "notlar": "El yazisi makbuz, Ilyasbey V.D., Seri: ABR, Sira: 0316990"
+    },
+    "makbuz2.png": {
+      "market_adi": "Europcar",
+      "tarih": "30/06/2024",
+      "toplam": "1307.58",
+      "kdv": "97.98",
+      "vergi_no": "106.042.061",
+      "para_birimi": "CHF",
+      "urunler": [
+        { "ad": "Basic Rental", "tutar": 874.50 },
+        { "ad": "Glass & Tyres Protection", "tutar": 74.00 },
+        { "ad": "Premium Station Surcharge", "tutar": 189.70 },
+        { "ad": "Fuel Charge", "tutar": 71.40 }
+      ],
+      "notlar": "Arac kiralama faturasi, Zurih/Isvicre, cok kucuk yazi - detaylar okunamadi"
+    },
+    "makbuz3.png": {
+      "market_adi": "OHEM ENERJI URUNLERI LTD STI",
+      "tarih": "10/06/2024",
+      "toplam": "2520",
+      "kdv": "420",
+      "vergi_no": "8591406336",
+      "para_birimi": "TL",
+      "urunler": [{"ad": "TRAFO", "tutar": 2520}],
+      "notlar": "E-Fatura, QR kodlu, detaylar cok kucuk - okunamadi"
+    },
+    "makbuz4.png": {
+      "market_adi": "Ismont",
+      "tarih": "14/06/2024",
+      "toplam": "2099.99",
+      "kdv": "190.91",
+      "vergi_no": "8591406336",
+      "para_birimi": "TL",
+      "urunler": [
+       {
+        "ad": "HI-VIS INTERLOK POLO T-SHIRT U. KOL 2 RENK SARI-LACIVERT, MEDIUM",
+        "tutar": 477.27
+      },
+      {
+        "ad": "HI-VIS INTERLOK POLO T-SHIRT U. KOL 2 RENK SARI-LACIVERT, LARGE",
+        "tutar": 477.27
+      },
+      {
+        "ad": "HI-VIS INTERLOK POLO T-SHIRT U. KOL 2 RENK SARI-LACIVERT, EXTRA LARGE",
+        "tutar": 477.27
+      }
+      ],
+      "notlar": "E-Fatura, cok kucuk yazi - detaylar okunamadi"
+    },
+    "makbuz5.png": {
+      "market_adi": "Bastruk Brahim / Traser Trafo Servisi",
+      "tarih": "2024-07-15",
+      "toplam": 1523.94,
+      "kdv": 0.00,
+      "vergi_no": "92121943200017",
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Appartement La maison 44 rue de Cernay 44, 68500", "tutar": 1343.94},
+        {"ad": "Menage fin de sejour 23/05/24-15/06/24", "tutar": 180.00}
+      ],
+      "notlar": "Cotoon.com uzerinden, Bernard Schmitt'e kesilen fatura"
+    },
+    "makbuz7.jpeg": {
+      "market_adi": "La Ricetta SDQ EIRL (Lincoln Suite)",
+      "tarih": "14/12/2021",
+      "toplam": 2450.00,
+      "kdv": null,
+      "vergi_no": "RNC 132988116",
+      "para_birimi": "RD$",
+      "urunler": [
+        {"ad": "Servicio Comida", "tutar": 2450.00}
+      ],
+      "notlar": "Dominik Cumhuriyeti, Santo Domingo, el yazisi fatura"
+    },
+    "o1.png": {
+      "market_adi": "Mehmetcik Vakfi Turizm Petrol Insaat Gida Soda ve San. Tic. Ltd. Sti.",
+      "tarih": "08/06/2024",
+      "toplam": 1000.00,
+      "kdv": null,
+      "vergi_no": "6150768602",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Yiyecek", "miktar": 1, "tutar": 400.00},
+        {"ad": "Konaklama", "tutar": 600.00}
+      ],
+      "notlar": "Fatih Mah. Karun Cad. No:34 Gebze/Kocaeli, Kredi karti 34HBJ626"
+    },
+    "o2.jpeg": {
+      "market_adi": "Otoyol Yatirim Isletme A.S. (Osmangazi Koprusu)",
+      "tarih": "11/03/2024",
+      "toplam": 305.00,
+      "kdv": 28.86,
+      "vergi_no": "6490494407",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Kopru Gecis Ucreti %10", "tutar": 290.00},
+        {"ad": "HGS/OGS Gecis Ucreti %20", "tutar": 15.00}
+      ],
+      "notlar": "Hersek Ist Yonu Alin Istasyonu, 23 Nolu Gise, Doganbey V.D., Is Bankasi ile odeme"
+    },
+    "o3.png": {
+      "market_adi": "Lotus Cafe (Mahmut Canpolat)",
+      "tarih": "12/06/2024",
+      "toplam": 867.50,
+      "kdv": 8.59,
+      "vergi_no": "66184158920",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Yiyecek", "miktar": 1, "tutar": 867.50}
+      ],
+      "notlar": "Merkez Mh Yalova/Kocaeli Cd. No:4/1 Taskopru/Ciflikkoy, Sultanbeyli V.D."
+    },
+    "o4.png": {
+      "market_adi": "Intera Gida Ins. ve Tic. Ltd. Sti.",
+      "tarih": "17/06/2024",
+      "toplam": 187.56,
+      "kdv": 17.05,
+      "vergi_no": "1150404001",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Sut 4.52", "tutar": 4.52},
+        {"ad": "Gum 6.10", "tutar": 6.10},
+        {"ad": "Diger urunler", "tutar": 176.94}
+      ],
+      "notlar": "Sanliurfa Istasyon, Pendik/Istanbul, Is Bankasi ile odeme"
+    },
+    "o6.png": {
+      "market_adi": "Doganli Gida (Muhammet Ali Demir)",
+      "tarih": "17/06/2024",
+      "toplam": 655.00,
+      "kdv": 6.49,
+      "vergi_no": "???",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Ten Cila", "tutar": 655.00}
+      ],
+      "notlar": "Eski Bagdat Cad. Novus Is Bankasi ile odeme"
+    },
+    "o7.png": {
+      "market_adi": "Kirisoglu Petrol Kimya San. ve Tic. Ltd. Sti.",
+      "tarih": "18/07/2021",
+      "toplam": 500.00,
+      "kdv": 83.33,
+      "vergi_no": "0773402W670",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Akaryakit", "miktar": 1, "birim_fiyat": 11.59, "tutar": 500.00}
+      ],
+      "notlar": "Tayakadin Mah. Gaziosmanpasa/Kocaeli, Mersis: 0077340206700011, Plaka: 34HBJ026"
+    },
+    "o8.png": {
+      "market_adi": "Kebab House",
+      "tarih": "19/06/2024",
+      "toplam": 33.50,
+      "kdv": "???",
+      "vergi_no": "W305910318",
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Grande Frites", "tutar": 5.50},
+        {"ad": "Canette 33cl", "miktar": 4, "birim_fiyat": 2.00, "tutar": 8.00},
+        {"ad": "Mix 2.70", "tutar": 2.70},
+        {"ad": "Diger urunler", "tutar": 17.30}
+      ],
+      "notlar": "1A Rue de Rimschwiller, 68730 Blotzheim, France, SIRET"
+    },
+    "o9.png": {
+      "market_adi": "McDonald's Mulhouse Porte Bale",
+      "tarih": "19/06/2024",
+      "toplam": "43.30",
+      "kdv": "3.94",
+      "vergi_no": "FR16410770622",
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Big Mac", "tutar": 9.85},
+        {"ad": "Big Mac", "tutar": 9.85},
+        {"ad": "Mc Chick", "tutar": 9.10},
+        {"ad": "MX Pota Dbl", "tutar": 1.50},
+        {"ad": "Nugget 9", "miktar": 2, "tutar": 13.00}
+      ],
+      "notlar": "CB 84, Mulhouse/France, cok kucuk yazi"
+    },
+    "o10.png": {
+      "market_adi": "Lidl",
+      "tarih": "19/06/2024",
+      "toplam": 69.49,
+      "kdv": 4.59,
+      "vergi_no": "34326262218927",
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Sacs poignees x4", "tutar": 0.76},
+        {"ad": "Oeufs cage x30", "tutar": 4.85},
+        {"ad": "Sel fin Ile de Re", "tutar": 1.69},
+        {"ad": "Cacahuetes grillees", "tutar": 0.76},
+        {"ad": "Emmental francais", "tutar": 2.24},
+        {"ad": "Fromage rape", "tutar": 2.47},
+        {"ad": "Gouda Jeune", "tutar": 4.47},
+        {"ad": "Tomate cerise x2", "tutar": 1.98},
+        {"ad": "Lipton Yellow", "tutar": 1.23},
+        {"ad": "Essuie-tout", "tutar": 3.75},
+        {"ad": "Yaourt fruits", "tutar": 2.29},
+        {"ad": "The glace arome frai", "tutar": 0.99},
+        {"ad": "Joker Jus Orange", "tutar": 2.97},
+        {"ad": "Nutella", "tutar": 5.19},
+        {"ad": "Olives noires x2", "tutar": 1.44},
+        {"ad": "Pain mie", "tutar": 1.46},
+        {"ad": "Frites allumettes", "tutar": 2.65},
+        {"ad": "Savon mains", "tutar": 1.29},
+        {"ad": "Pur Jus multifruits", "tutar": 1.40},
+        {"ad": "Volvic x12", "tutar": 6.36},
+        {"ad": "Sucre morceaux", "tutar": 1.56},
+        {"ad": "Planta Fin", "tutar": 2.73},
+        {"ad": "Abricot vrac", "tutar": 3.69},
+        {"ad": "Huile tournesol", "tutar": 1.79},
+        {"ad": "Badoit", "tutar": 0.62},
+        {"ad": "Eau gazeuse", "tutar": 0.26},
+        {"ad": "Oasis tropical", "tutar": 2.05},
+        {"ad": "Caprice des Dieux", "tutar": 3.43},
+        {"ad": "Banane vrac", "tutar": 3.06}
+      ],
+      "notlar": "30 urun, SIRET, France"
+    },
+    "o11.png": {
+      "market_adi": "Cora Wittenheim",
+      "tarih": "null",
+      "toplam": 12.69,
+      "kdv": 0.66,
+      "vergi_no": "null",
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Evian 12x33cl", "tutar": 4.92},
+        {"ad": "Eau Minerale Cora 6x50cl x2", "tutar": 2.80},
+        {"ad": "Mont Blanc 6x50cl", "tutar": 2.40},
+        {"ad": "Cora PDM Moel Nat 500g", "tutar": 1.12},
+        {"ad": "Viennois Choco 4x100g", "tutar": 1.45}
+      ],
+      "notlar": "130 Route de Soultz, 68271 Wittenheim, France"
+    },
+    "o12.png": {
+      "market_adi": "Leroy Merlin Morschwiller le Bas",
+      "tarih": "null",
+      "toplam": 78.50,
+      "kdv": "null",
+      "vergi_no": "null",
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Sac a Outils 16 Dexter", "tutar": 29.90},
+        {"ad": "Feutrine Rouleau 10m", "tutar": 14.90},
+        {"ad": "Bache Bleue 3x2m x2", "tutar": 9.20},
+        {"ad": "Lot Chiffons 1kg x3", "tutar": 16.50},
+        {"ad": "Gant Bricolage x2", "tutar": 7.80},
+        {"ad": "Seau Macon 11L x2", "tutar": 3.00}
+      ],
+      "notlar": "6 Avenue Jean Monnet, 68790 Morschwiller le Bas"
+    },
+    "o13.png": {
+      "market_adi": "Epicerie Parsa",
+      "tarih": "20/06/2024",
+      "toplam": 63.96,
+      "kdv": 3.33,
+      "vergi_no": "88811760300017",
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Divers 5.5%", "miktar": 4, "birim_fiyat": 15.99, "tutar": 63.96}
+      ],
+      "notlar": "33 avenue de Colmar, 68100 Mulhouse, Afghan Distri, SIRET"
+    },
+    "o14.png": {
+      "market_adi": "Stationnement (Park Fisi)",
+      "tarih": "20/06/2024",
+      "toplam": 1.00,
+      "kdv": null,
+      "vergi_no": null,
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Stationnement", "tutar": 1.00}
+      ],
+      "notlar": "Duplicata, Numero: A153601, Prix: 1.00 EUR"
+    },
+    "o15.png": {
+      "market_adi": "Palmiye Resto",
+      "tarih": "20/06/2024",
+      "toplam": 45.00,
+      "kdv": 4.09,
+      "vergi_no": "887988640 00017",
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Plat/Assiet T2", "tutar": 45.00}
+      ],
+      "notlar": "5 Rue d'Ensisheim, 68840 Pulversheim, SIRET, TVA 10%"
+    },
+    "o16.png": {
+      "market_adi": "Auchan Ensisheim",
+      "tarih": "24/06/2024",
+      "toplam": 58.14,
+      "kdv": 2.84,
+      "vergi_no": "null",
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Sac Bretelles", "tutar": 0.10},
+        {"ad": "Lipton Yellow", "tutar": 1.59},
+        {"ad": "Redbull x4", "tutar": 7.96},
+        {"ad": "Haribo Fraise 2006", "tutar": 1.58},
+        {"ad": "Kinder Pao Choco", "tutar": 2.48},
+        {"ad": "Baritat Yagurt Nato", "tutar": 1.08},
+        {"ad": "Auchan Beef Patties", "tutar": 5.36},
+        {"ad": "Riz Basmati Unc Les", "tutar": 1.17},
+        {"ad": "Auchan Pain Tranches", "tutar": 0.99},
+        {"ad": "Harry's Ame Pain", "tutar": 1.86},
+        {"ad": "Knors Plen Air", "tutar": 2.15},
+        {"ad": "Volv Eau Mineral", "tutar": 2.40},
+        {"ad": "Fromage Eresa Prem", "tutar": 4.78},
+        {"ad": "Nutella Pate a Tart", "tutar": 4.98},
+        {"ad": "Nescafe Special", "tutar": 6.75}
+      ],
+      "notlar": "10 Rue de la Gare, 68190 Ensisheim, 21 articles, Ticket:294"
+    },
+    "o17.png": {
+      "market_adi": "Cora Wittenheim (Station)",
+      "tarih": "25/06/2024",
+      "toplam": 81.76,
+      "kdv": "13.63",
+      "vergi_no": "null",
+      "para_birimi": "EUR",
+      "urunler": [
+        {"ad": "Pompe E10", "miktar": 46.48, "birim_fiyat": 1.759, "tutar": 81.76}
+      ],
+      "notlar": "130 Route de Soultz, 68270 Wittenheim, Benzin istasyonu, 67/1 Station/01"
+    },
+    "o18.png": {
+      "market_adi": "Starbucks Coffee",
+      "tarih": "03/10/2024",
+      "toplam": 150.00,
+      "kdv": 13.64,
+      "vergi_no": "7004310115",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Hasbahti-Peynir", "tutar": 110.00},
+        {"ad": "Turkish Tea Short", "tutar": 40.00}
+      ],
+      "notlar": "Buyukdere CD Kanyon AVM No:185, Sisli/Istanbul, Bogazici Kurumlar V.D."
+    },
+    "o19.jpeg": {
+      "market_adi": "Ispark Istanbul Otopark Isletmeleri Tic. A.S.",
+      "tarih": "08/10/2024",
+      "toplam": 70.00,
+      "kdv": 11.67,
+      "vergi_no": "5260047973",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Otopark %20", "tutar": 70.00}
+      ],
+      "notlar": "Yamanevler Mh. Karacahmet Sk. No:4 Umraniye/Istanbul, Bogazici Kurumlar V.D., Tic.Sicil: 150533"
+    },
+    "o-1.png": {
+      "market_adi": "Yalova Ro-Ro Terminali Anonim Sirketi",
+      "tarih": "12/06/2024",
+      "toplam": 2010.00,
+      "kdv": 310.00,
+      "vergi_no": "4890027464",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Surucu ile Minibus", "miktar": 2, "tutar": 2040.00}
+      ],
+      "notlar": "Eyup Sultan Mah. Mehmet Akif Cad. No:1/A Saricakethepesi/Istanbul, Sultanbeyli V.D., Mersis: 0489002746400011, Nakit odeme"
+    },
+    "o-2.png": {
+      "market_adi": "Lidl",
+      "tarih": "19/06/2024",
+      "toplam": 69.49,
+      "kdv": 4.59,
+      "vergi_no": "34326262218927",
+      "para_birimi": "EUR",
+      "urunler": [],
+      "notlar": "o10 ile AYNI FIS - Lidl Fransa"
+    },
+    "o-3.jpeg": {
+      "market_adi": "Fat Sultan Sofrasi Lokanta Isletmeciligi Anonim Sirketi",
+      "tarih": "06/03/2025",
+      "toplam": 500.00,
+      "kdv": 45.45,
+      "vergi_no": "3851748616",
+      "para_birimi": "TL",
+      "urunler": [
+        {"ad": "Yiyecek %10", "tutar": 500.00}
+      ],
+      "notlar": "Cavus Mah. Imrendere Cad. No:1 Sile/Istanbul, Sile V.D., Yapi Kredi ile odeme, Onay Kodu: 977253"
+    }
+  }
+}
