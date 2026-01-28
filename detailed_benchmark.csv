@@ -1,0 +1,28 @@
+﻿dosya,market,gt_toplam,gt_tarih,gt_kdv,Paddle_Original,Paddle_Grayscale,Paddle_Binary_Otsu,Paddle_Adaptive_Thresh,Paddle_Denoise,Easy_Original,Easy_Grayscale,Easy_Binary_Otsu,Easy_Adaptive_Thresh,Easy_Denoise,ENSEMBLE_SONUC,ENSEMBLE_MATCH,BEST_METHOD
+makbuz1.png,Halil Nalcakan,980.0,19/06/2024,,-,-,-,-,-,-,-,-,-,-,-,FALSE,-
+makbuz2.png,Europcar,1307.58,30/06/2024,97.98,-,-,-,-,-,-,-,-,-,-,-,FALSE,-
+makbuz3.png,OHEM ENERJI URUNLERI LTD ,2520,10/06/2024,420,520.0,520.0,-,2.0,520.0,-,-,-,-,-,520.0,FALSE,-
+makbuz4.png,Ismont,2099.99,14/06/2024,190.91,66.13,66.13,954.54,-,66.13,-,-,-,-,-,66.13,FALSE,-
+makbuz5.png,Bastruk Brahim / Traser T,1523.94,2024-07-15,0.0,-,-,-,-,-,-,-,-,-,-,-,FALSE,-
+makbuz7.jpeg,La Ricetta SDQ EIRL (Linc,2450.0,14/12/2021,,-,-,24.5,-,-,-,-,-,-,-,24.5,FALSE,-
+o1.png,Mehmetcik Vakfi Turizm Pe,1000.0,08/06/2024,,1.0,1.0,1.0,-,1.0,-,-,-,-,-,1.0,FALSE,-
+o2.jpeg,Otoyol Yatirim Isletme A.,305.0,11/03/2024,28.86,305.0,305.0,305.0,-,305.0,-,-,-,-,-,305.0,TRUE,Paddle_Original
+o3.png,Lotus Cafe (Mahmut Canpol,867.5,12/06/2024,8.59,867.5,867.5,-,867.5,-,-,-,-,-,-,867.5,TRUE,Paddle_Original
+o4.png,Intera Gida Ins. ve Tic. ,187.56,17/06/2024,17.05,187.56,187.56,187.56,-,187.56,-,-,-,-,-,187.56,TRUE,Paddle_Original
+o6.png,Doganli Gida (Muhammet Al,655.0,17/06/2024,6.49,655.0,655.0,655.0,-,655.0,-,-,-,-,-,655.0,TRUE,Paddle_Original
+o7.png,Kirisoglu Petrol Kimya Sa,500.0,18/07/2021,83.33,500.0,500.0,500.0,500.0,500.0,-,-,-,-,-,500.0,TRUE,Paddle_Original
+o8.png,Kebab House,33.5,19/06/2024,???,-,-,-,-,-,-,-,-,-,-,-,FALSE,-
+o9.png,McDonald's Mulhouse Porte,43.30,19/06/2024,3.94,1.0,1.0,-,-,1.0,-,-,-,-,-,1.0,FALSE,-
+o10.png,Lidl,69.49,19/06/2024,4.59,-,-,-,-,-,-,-,-,-,-,-,FALSE,-
+o11.png,Cora Wittenheim,12.69,null,0.66,12.69,12.69,12.69,12.03,12.69,-,-,-,-,-,12.69,TRUE,Paddle_Original
+o12.png,Leroy Merlin Morschwiller,78.5,null,null,78.5,78.5,78.5,-,78.5,-,-,-,-,-,78.5,TRUE,Paddle_Original
+o13.png,Epicerie Parsa,63.96,20/06/2024,3.33,15.99,15.99,15.99,15.99,15.99,-,-,-,-,-,15.99,FALSE,-
+o14.png,Stationnement (Park Fisi),1.0,20/06/2024,,-,-,-,-,-,-,-,-,-,-,-,FALSE,-
+o15.png,Palmiye Resto,45.0,20/06/2024,4.09,-,-,-,-,-,-,-,-,-,-,-,FALSE,-
+o16.png,Auchan Ensisheim,58.14,24/06/2024,2.84,58.14,58.14,58.14,-,58.14,-,-,-,-,-,58.14,TRUE,Paddle_Original
+o17.png,Cora Wittenheim (Station),81.76,25/06/2024,13.63,81.76,81.76,81.76,81.76,81.76,-,-,-,-,-,81.76,TRUE,Paddle_Original
+o18.png,Starbucks Coffee,150.0,03/10/2024,13.64,150.0,150.0,150.0,150.0,150.0,-,-,-,-,-,150.0,TRUE,Paddle_Original
+o19.jpeg,Ispark Istanbul Otopark I,70.0,08/10/2024,11.67,-,-,-,-,-,-,-,-,-,-,-,FALSE,-
+o-1.png,Yalova Ro-Ro Terminali An,2010.0,12/06/2024,310.0,-,-,-,-,-,-,-,-,-,-,-,FALSE,-
+o-2.png,Lidl,69.49,19/06/2024,4.59,-,-,-,-,-,-,-,-,-,-,-,FALSE,-
+o-3.jpeg,Fat Sultan Sofrasi Lokant,500.0,06/03/2025,45.45,500.0,500.0,500.0,-,500.0,-,-,-,-,-,500.0,TRUE,Paddle_Original
