@@ -553,8 +553,38 @@ class ReceiptOCR:
 
             # Gecerlilik kontrolu
             d, m, y = int(day), int(month), int(year)
-            if 1 <= d <= 31 and 1 <= m <= 12 and 2000 <= y <= 2030:
+            if not (1 <= d <= 31 and 1 <= m <= 12):
+                return None
+
+            # Yil duzeltme: Fisler genellikle son 2 yilda kesilir
+            # OCR hatalari: 2025 -> 2002, 2009, 2005 vb.
+            current_year = 2025  # Guncel yil
+
+            if 2000 <= y <= 2015:
+                # Eski yil, muhtemelen OCR hatasi
+                # Son 2 haneyi duzeltmeye calis
+                year_suffix = year[-2:]
+
+                # Yaygin OCR hatalari: 02->25, 09->09(belki 05), 05->25
+                ocr_year_fixes = {
+                    '02': '25',  # 2002 -> 2025
+                    '09': '25',  # 2009 -> 2025 (9 ve 5 karisir)
+                    '05': '25',  # 2005 -> 2025
+                    '00': '20',  # 2000 -> 2020
+                    '01': '21',  # 2001 -> 2021
+                    '03': '23',  # 2003 -> 2023
+                    '04': '24',  # 2004 -> 2024
+                    '06': '26',  # 2006 -> 2026
+                }
+
+                if year_suffix in ocr_year_fixes:
+                    year = '20' + ocr_year_fixes[year_suffix]
+                    y = int(year)
+
+            # Final kontrol: 2018-2030 arasi kabul et
+            if 2018 <= y <= 2030:
                 return f"{day.zfill(2)}.{month.zfill(2)}.{year}"
+
         except (ValueError, IndexError):
             pass
         return None
