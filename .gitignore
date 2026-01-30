@@ -60,3 +60,8 @@ final_receipts.json
 parsed_receipts.json
 preprocessing_benchmark.csv
 receipt_extraction_*.csv
+
+# Eski scriptler
+benchmark_paddle.py
+benchmark_specific.py
+simple_ocr_pipeline.py
