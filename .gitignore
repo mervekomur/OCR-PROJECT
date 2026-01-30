@@ -52,3 +52,4 @@ experiments/
 pebble-451721-bdc8fa59a91d.json
 *-credentials.json
 *-service-account.json
+.claude/
