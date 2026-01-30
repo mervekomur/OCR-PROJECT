@@ -53,3 +53,10 @@ pebble-451721-bdc8fa59a91d.json
 *-credentials.json
 *-service-account.json
 .claude/
+
+# Gecici cikti dosyalari
+final_output/
+final_receipts.json
+parsed_receipts.json
+preprocessing_benchmark.csv
+receipt_extraction_*.csv
