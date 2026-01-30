@@ -47,3 +47,8 @@ debug_*.jpg
 
 # Experiments (local tests)
 experiments/
+
+# Google Cloud credentials (sensitive)
+pebble-451721-bdc8fa59a91d.json
+*-credentials.json
+*-service-account.json
