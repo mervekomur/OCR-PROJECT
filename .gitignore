@@ -65,3 +65,6 @@ receipt_extraction_*.csv
 benchmark_paddle.py
 benchmark_specific.py
 simple_ocr_pipeline.py
+
+# Analiz dokumanlari
+*.docx
