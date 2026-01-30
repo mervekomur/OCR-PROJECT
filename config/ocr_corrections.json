@@ -1,0 +1,24 @@
+{
+  "business_name_corrections": {
+    "Utr echt": "Utrecht",
+    "Amst erdam": "Amsterdam",
+    "Istan bul": "Istanbul",
+    "Ank ara": "Ankara",
+    "Izm ir": "Izmir",
+    "Hilt on": "Hilton",
+    "Star bucks": "Starbucks",
+    "McDon alds": "McDonalds",
+    "Burg er": "Burger"
+  },
+  "product_name_corrections": {
+    "uNlu Hamuller": "Unlu Mamuller",
+    "uNlu Mamuller": "Unlu Mamuller",
+    "Unlu Hamuller": "Unlu Mamuller",
+    "UNLU HAMULLER": "UNLU MAMULLER",
+    "uNLU HAMULLER": "UNLU MAMULLER",
+    "EKHEK": "EKMEK",
+    "SlMlT": "SIMIT",
+    "SIHIT": "SIMIT",
+    "P0GACA": "POGACA"
+  }
+}
