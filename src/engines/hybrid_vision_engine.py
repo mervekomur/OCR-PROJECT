@@ -389,22 +389,68 @@ HATIRLA: Metinde olmayan değer için null yaz, UYDURMA!"""
 
         # Apply TESK rule
         tesk_detected = tesk_detected or tesk_from_claude
-        is_taxi = any(kw in ocr_text.lower() for kw in ['taksi', 'taxi', 'tesk'])
+        ocr_lower = ocr_text.lower()
+
+        # TESK detection: "TESK" veya "Esnaf ve Sanatkarları Konfederasyonu"
+        tesk_keywords = ['tesk', 'esnaf ve sanatkar', 'konfederasyonu', 'perakende satış fişi']
+        is_tesk_receipt = any(kw in ocr_lower for kw in tesk_keywords) or tesk_detected
+
+        # Taksi detection
+        is_taxi = any(kw in ocr_lower for kw in ['taksi', 'taxi'])
 
         if is_foreign:
             financials["yurt_disi_masrafi"] = True
             if financials.get("kdv_orani") is None:
                 financials["kdv_orani"] = 0
             financials["kdv_notu"] = "Yurt dışı masrafı"
+        elif is_tesk_receipt:
+            # TESK fişleri KDV %0
+            financials["kdv_orani"] = 0
+            financials["kdv_tutari"] = 0
+            financials["kdv_notu"] = "TESK fişi tespit edildi - KDV %0"
         elif is_taxi:
-            if tesk_detected:
-                financials["kdv_orani"] = 0
-                financials["kdv_tutari"] = 0
-                financials["kdv_notu"] = "TESK tespit edildi - KDV %0"
-            else:
-                if financials.get("kdv_orani") is None:
+            # TESK olmayan taksi fişi - KDV %20
+            if financials.get("kdv_orani") is None:
+                financials["kdv_orani"] = 20
+            financials["kdv_notu"] = "Taksi fişi (TESK yok) - KDV %20"
+
+        # Step 4b: Handle special cases
+        # Tren bileti (TCDD) - KDV dahil ama oran belirtilmemiş
+        if 'tcdd' in ocr_lower or 'tren' in ocr_lower or 'e-bilet' in ocr_lower:
+            if financials.get("kdv_orani") is None:
+                if 'kdv dahil' in ocr_lower:
+                    # Tren biletleri genelde %10 KDV
+                    financials["kdv_orani"] = 10
+                    financials["kdv_notu"] = "Tren bileti - KDV %10 (dahil)"
+
+        # "KDV dahildir" ama oran yok - market/genel fiş
+        if financials.get("kdv_orani") is None and 'kdv dahil' in ocr_lower:
+            # Genel market fişi için default %20
+            financials["kdv_orani"] = 20
+            financials["kdv_tahmini_atandi"] = True
+            financials["kdv_notu"] = "KDV dahil yazıyor, oran belirtilmemiş - default %20"
+
+        # Karma KDV oranları - birden fazla %10 ve %20 varsa
+        if financials.get("kdv_orani") is None:
+            has_10 = '%10' in ocr_text or '% 10' in ocr_text
+            has_20 = '%20' in ocr_text or '% 20' in ocr_text
+            if has_10 and has_20:
+                # Karma KDV - dominant oranı bul
+                count_10 = ocr_text.count('%10') + ocr_text.count('% 10')
+                count_20 = ocr_text.count('%20') + ocr_text.count('% 20')
+                if count_20 >= count_10:
                     financials["kdv_orani"] = 20
-                financials["kdv_notu"] = "Taksi fişi TESK yok - KDV %20"
+                else:
+                    financials["kdv_orani"] = 10
+                financials["kdv_karma_oran"] = True
+                financials["kdv_notu"] = f"Karma KDV oranları tespit edildi (%10: {count_10}, %20: {count_20})"
+
+        # Kargo fişi - tesellüm/ambar fişleri için default %20
+        kargo_keywords = ['kargo', 'tesellüm', 'tesellum', 'ambar', 'gönderi', 'gönderen']
+        if financials.get("kdv_orani") is None and any(kw in ocr_lower for kw in kargo_keywords):
+            financials["kdv_orani"] = 20
+            financials["kdv_tahmini_atandi"] = True
+            financials["kdv_notu"] = "Kargo fişi - KDV %20 (varsayılan)"
 
         # Step 5: Mathematical Heuristics for KDV
         # IMPORTANT: Heuristics work on Google Vision's raw_text (ocr_text), NOT Claude's output
