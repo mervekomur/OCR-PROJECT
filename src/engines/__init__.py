@@ -9,6 +9,7 @@ from .paddleocr_engine import PaddleOCREngine
 from .donut_engine import DonutEngine
 from .got_ocr_engine import GOTOCREngine
 from .google_vision_engine import GoogleVisionEngine
+from .claude_vision_engine import ClaudeVisionEngine
 from .structure_engine import StructureEngine, SAPDocument, extract_receipt_data
 from .regex_structure_engine import RegexStructureEngine, RegexStructuredReceipt, extract_with_regex
 from .financial_validator import FinancialValidator, ValidationResult, validate_receipt
@@ -22,6 +23,7 @@ __all__ = [
     'DonutEngine',
     'GOTOCREngine',
     'GoogleVisionEngine',
+    'ClaudeVisionEngine',
     'StructureEngine',
     'SAPDocument',
     'extract_receipt_data',
