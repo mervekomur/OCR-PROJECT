@@ -10,8 +10,8 @@ Features:
 - KKEG calculation (vehicle expenses 70/30 split)
 - VKN checksum validation
 - Document type detection (Fatura, Fiş, Gider Pusulası, Bilgi Fişi)
-- Employee name fuzzy matching (Levenshtein Distance)
 - Personal invoice rejection rule
+- TODO: Employee name fuzzy matching (Levenshtein Distance) - gelecekte eklenecek
 """
 
 import os
@@ -171,139 +171,16 @@ LANGUAGE_PATTERNS = {
 }
 
 # =============================================================================
-# EMPLOYEE LIST (FLO Çalışan Listesi)
-# Bu liste SAP/HR sisteminden çekilmeli veya config dosyasından yüklenmeli
+# TODO: EMPLOYEE LIST (Çalışan Eşleştirme - Gelecekte Eklenecek)
 # =============================================================================
-EMPLOYEE_LIST = [
-    # Örnek çalışan listesi - gerçek liste FLO'dan alınacak
-    "Ahmet Yılmaz",
-    "Mehmet Kaya",
-    "Ayşe Demir",
-    "Fatma Çelik",
-    "Ali Öztürk",
-    "Zeynep Arslan",
-    "Mustafa Şahin",
-    "Emine Yıldız",
-    "Hasan Aydın",
-    "Hatice Koç",
-    "İbrahim Korkmaz",
-    "Hacer Özdemir",
-    "Osman Çetin",
-    "Elif Erdoğan",
-    "Hüseyin Kılıç",
-    "Merve Aksoy",
-    "Murat Polat",
-    "Esra Özkan",
-    "Emre Şen",
-    "Büşra Yılmazer",
-    "Serkan Güneş",
-    "Seda Kaplan",
-    "Burak Acar",
-    "Gizem Tekin",
-    "Onur Aktaş",
-    "Gamze Doğan",
-    "Cem Yalçın",
-    "Deniz Çakır",
-    "Tuncay Bayrak",
-    "Sibel Aslan",
-    # ... Daha fazla çalışan eklenebilir
-]
-
-# Minimum similarity threshold for name matching (80%)
-NAME_SIMILARITY_THRESHOLD = 0.80
+# Çalışan isim eşleştirme fonksiyonu ileride eklenecek.
+# Gerekli: SAP/HR sisteminden çalışan listesi çekilmeli
+# Algoritma: Levenshtein Distance ile %80 benzerlik eşiği
 
 
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
-
-def levenshtein_distance(s1: str, s2: str) -> int:
-    """
-    Calculate the Levenshtein distance between two strings.
-
-    The Levenshtein distance is the minimum number of single-character edits
-    (insertions, deletions, or substitutions) required to change one string
-    into the other.
-    """
-    if len(s1) < len(s2):
-        return levenshtein_distance(s2, s1)
-
-    if len(s2) == 0:
-        return len(s1)
-
-    previous_row = range(len(s2) + 1)
-    for i, c1 in enumerate(s1):
-        current_row = [i + 1]
-        for j, c2 in enumerate(s2):
-            # j+1 instead of j since previous_row and current_row are one character longer
-            insertions = previous_row[j + 1] + 1
-            deletions = current_row[j] + 1
-            substitutions = previous_row[j] + (c1 != c2)
-            current_row.append(min(insertions, deletions, substitutions))
-        previous_row = current_row
-
-    return previous_row[-1]
-
-
-def calculate_similarity(s1: str, s2: str) -> float:
-    """
-    Calculate similarity ratio between two strings using Levenshtein distance.
-
-    Returns a value between 0.0 (completely different) and 1.0 (identical).
-    """
-    if not s1 or not s2:
-        return 0.0
-
-    # Normalize strings: lowercase and strip
-    s1_norm = s1.lower().strip()
-    s2_norm = s2.lower().strip()
-
-    if s1_norm == s2_norm:
-        return 1.0
-
-    distance = levenshtein_distance(s1_norm, s2_norm)
-    max_len = max(len(s1_norm), len(s2_norm))
-
-    if max_len == 0:
-        return 1.0
-
-    return 1.0 - (distance / max_len)
-
-
-def find_matching_employee(name: str, employee_list: List[str] = None, threshold: float = NAME_SIMILARITY_THRESHOLD) -> Tuple[Optional[str], float]:
-    """
-    Find the best matching employee name from the list.
-
-    Args:
-        name: The OCR-read name to match
-        employee_list: List of employee names (uses default if None)
-        threshold: Minimum similarity threshold (default 0.80 = 80%)
-
-    Returns:
-        Tuple of (matched_name, similarity_score) or (None, 0.0) if no match
-    """
-    if not name:
-        return None, 0.0
-
-    if employee_list is None:
-        employee_list = EMPLOYEE_LIST
-
-    best_match = None
-    best_score = 0.0
-
-    name_normalized = name.lower().strip()
-
-    for employee in employee_list:
-        score = calculate_similarity(name_normalized, employee.lower().strip())
-        if score > best_score:
-            best_score = score
-            best_match = employee
-
-    if best_score >= threshold:
-        return best_match, best_score
-
-    return None, best_score
-
 
 def is_personal_name(name: str) -> bool:
     """
@@ -379,8 +256,8 @@ class ClaudeVisionEngine(BaseOCREngine):
     - Withholding tax detection
     - KKEG calculation for vehicle expenses
     - VKN/TCKN checksum validation
-    - Employee name fuzzy matching (Levenshtein Distance, 80% threshold)
     - Personal invoice rejection rule
+    - TODO: Employee name fuzzy matching (gelecekte eklenecek)
     """
 
     name = "claude_vision"
@@ -794,17 +671,17 @@ JSON formatı:
                     financials["kdv_notu"] = f"{category.title()} kategorisi - varsayılan KDV %{rate}"
                 break
 
-    def _validate_buyer(self, alici: Dict[str, Any], employee_list: List[str] = None) -> Dict[str, Any]:
+    def _validate_buyer(self, alici: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Validate buyer against FLO companies and employee list.
+        Validate buyer against FLO companies.
 
         Rules:
         1. If VKN exists and matches FLO company -> APPROVED
         2. If TCKN exists (11 digits) -> Personal invoice -> REJECTED
-        3. If name exists but no VKN:
-           a. Check if name matches employee list (80% similarity)
-           b. If match found -> correct the name, still REJECTED (personal invoice)
-           c. If no match and looks like personal name -> REJECTED
+        3. If name exists but no VKN and looks like personal name -> REJECTED
+        4. No buyer info -> Retail receipt -> APPROVED
+
+        TODO: Çalışan isim eşleştirme (Levenshtein Distance) ileride eklenecek
         """
         if not alici:
             return {
@@ -824,28 +701,13 @@ JSON formatı:
             if len(clean_id) == 11:
                 # TCKN - Personal ID number
                 tckn_valid = self._validate_tckn_checksum(clean_id)
-
-                # Try to match name with employee list
-                matched_employee, similarity = find_matching_employee(alici_adi, employee_list)
-
-                result = {
+                return {
                     "alici_gecerli": False,
                     "alici_tipi": "GERCEK_KISI",
                     "tckn_checksum_valid": tckn_valid,
                     "islem_durumu": "REDDEDILDI",
                     "red_sebebi": "Şahıs adına kesilmiş fatura - FLO masraf politikasına aykırı"
                 }
-
-                if matched_employee:
-                    result["calisan_eslesmesi"] = {
-                        "okunan_isim": alici_adi,
-                        "duzeltilmis_isim": matched_employee,
-                        "benzerlik_orani": round(similarity * 100, 1),
-                        "eslesti": True
-                    }
-                    result["red_sebebi"] = f"Şahıs faturası - Çalışan: {matched_employee}"
-
-                return result
 
             elif len(clean_id) == 10:
                 # VKN - Company tax number
@@ -877,38 +739,12 @@ JSON formatı:
 
         # Case 2: No VKN but name exists - Check if it's a personal name
         elif alici_adi:
-            # First, try to match with employee list
-            matched_employee, similarity = find_matching_employee(alici_adi, employee_list)
-
-            if matched_employee:
-                # Name matches an employee - Personal invoice REJECTED
+            if is_personal_name(alici_adi):
                 return {
                     "alici_gecerli": False,
                     "alici_tipi": "GERCEK_KISI",
                     "islem_durumu": "REDDEDILDI",
-                    "red_sebebi": f"Şahıs faturası - Çalışan: {matched_employee}",
-                    "calisan_eslesmesi": {
-                        "okunan_isim": alici_adi,
-                        "duzeltilmis_isim": matched_employee,
-                        "benzerlik_orani": round(similarity * 100, 1),
-                        "eslesti": True
-                    }
-                }
-
-            # Check if it looks like a personal name (no company suffix, etc.)
-            elif is_personal_name(alici_adi):
-                return {
-                    "alici_gecerli": False,
-                    "alici_tipi": "GERCEK_KISI",
-                    "islem_durumu": "REDDEDILDI",
-                    "red_sebebi": "Şahıs adına kesilmiş fatura (VKN yok, kişisel isim tespit edildi)",
-                    "calisan_eslesmesi": {
-                        "okunan_isim": alici_adi,
-                        "duzeltilmis_isim": None,
-                        "benzerlik_orani": round(similarity * 100, 1) if similarity else 0,
-                        "eslesti": False,
-                        "not": "İsim çalışan listesinde bulunamadı"
-                    }
+                    "red_sebebi": "Şahıs adına kesilmiş fatura (VKN yok, kişisel isim tespit edildi)"
                 }
             else:
                 # Looks like a company name but no VKN

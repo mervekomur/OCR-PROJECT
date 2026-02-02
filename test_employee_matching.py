@@ -1,5 +1,8 @@
 """
-Test script for Employee Name Matching functionality.
+[DEPRECATED] Test script for Employee Name Matching functionality.
+
+Bu dosya şu anda devre dışı - çalışan eşleştirme özelliği TODO'ya alındı.
+İleride SAP/HR entegrasyonu yapıldığında tekrar aktif edilecek.
 
 Tests:
 - Levenshtein Distance calculation
