@@ -1,5 +1,5 @@
 """
-Claude Vision OCR Engine - FLO Masraf Modülü v3
+Claude Vision OCR Engine - FLO Masraf Modülü v4
 Direct image-to-structured-data using Claude's multimodal capabilities.
 
 Features:
@@ -11,6 +11,8 @@ Features:
 - VKN checksum validation
 - Document type detection (Fatura, Fiş, Gider Pusulası, Bilgi Fişi)
 - Personal invoice rejection rule
+- Mathematical Heuristics for KDV calculation (reverse calc, cross-check)
+- Semantic completion for partial/corrupted words
 - TODO: Employee name fuzzy matching (Levenshtein Distance) - gelecekte eklenecek
 """
 
@@ -25,6 +27,13 @@ from datetime import datetime
 from dataclasses import dataclass, field
 
 from .base import BaseOCREngine, OCRResult
+
+# Import tax calculator with mathematical heuristics
+try:
+    from ..logic.tax_calculator import TaxCalculator, SemanticCompleter
+    TAX_CALCULATOR_AVAILABLE = True
+except ImportError:
+    TAX_CALCULATOR_AVAILABLE = False
 
 
 # =============================================================================
@@ -884,6 +893,49 @@ JSON formatı:
                 # DİĞER KATEGORİLER - Varsayılan KDV oranları
                 self._apply_category_kdv(financials, account_match)
 
+        # 3.5 Mathematical Heuristics for KDV (when OCR didn't find it)
+        kdv_heuristics_result = None
+        if TAX_CALCULATOR_AVAILABLE:
+            # Apply mathematical heuristics if KDV is missing or needs validation
+            brut_tutar = financials.get("brut_tutar")
+            ocr_kdv_orani = financials.get("kdv_orani")
+            ocr_kdv_tutari = financials.get("kdv_tutari")
+
+            if brut_tutar and (ocr_kdv_orani is None or ocr_kdv_tutari is None):
+                tax_calc = TaxCalculator()
+
+                # Semantic completion for partial words
+                semantic = SemanticCompleter()
+                semantic_result = semantic.complete_text(raw_text)
+
+                kdv_result = tax_calc.calculate_kdv(
+                    brut_tutar=brut_tutar,
+                    ocr_kdv_orani=ocr_kdv_orani,
+                    ocr_kdv_tutari=ocr_kdv_tutari,
+                    raw_text=raw_text,
+                    is_foreign=is_foreign
+                )
+
+                kdv_heuristics_result = kdv_result.to_dict()
+
+                # Update financials with calculated KDV
+                if kdv_result.kdv_orani is not None:
+                    financials["kdv_orani"] = kdv_result.kdv_orani
+                if kdv_result.kdv_tutari is not None:
+                    financials["kdv_tutari"] = kdv_result.kdv_tutari
+                if kdv_result.matrah is not None:
+                    financials["kdv_matrah"] = kdv_result.matrah
+
+                financials["kdv_hesaplama_yontemi"] = kdv_result.method
+                financials["kdv_tahmini_atandi"] = kdv_result.tahmini_atandi
+
+                if kdv_result.notes:
+                    financials["kdv_notu"] = "; ".join(kdv_result.notes)
+
+                # Add semantic completions to header if found
+                if semantic_result["completions"]:
+                    header["semantic_completions"] = semantic_result["completions"]
+
         # 4. Tevkifat Detection
         tevkifat_result = self._detect_tevkifat(raw_text, items)
         if tevkifat_result["tevkifatli"]:
@@ -922,6 +974,7 @@ JSON formatı:
             "hesap_bilgisi": account_match.get("account_info"),
             "tevkifat": tevkifat_result,
             "kkeg_hesaplama": kkeg_calc.to_dict() if kkeg_calc else None,
+            "kdv_heuristics": kdv_heuristics_result,
             "kdv_notu": financials.get("kdv_notu")
         }
 
