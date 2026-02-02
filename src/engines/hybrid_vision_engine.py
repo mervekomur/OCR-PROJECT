@@ -63,89 +63,67 @@ class HybridVisionEngine(BaseOCREngine):
     name = "hybrid_vision"
     description = "Google Vision OCR + Claude Analysis - FLO Masraf Modülü"
 
-    CLAUDE_SYSTEM_PROMPT = """Sen FLO Grup şirketleri için fiş/fatura analiz uzmanısın.
-Sana OCR ile çıkarılmış ham metin verilecek. Bu metni analiz edip yapılandırılmış JSON üret.
+    CLAUDE_SYSTEM_PROMPT = """Sen bir JSON formatlayıcısısın. Görevin OCR metnini yapılandırılmış JSON'a dönüştürmek.
 
-## ÇOK ÖNEMLİ: SATICI ve ALICI AYRIMI
+## KRİTİK KURAL: SADECE METİNDEKİ VERİYİ KULLAN!
+- Metinde OLMAYAN veriyi UYDURMA
+- Bir değer metinde yoksa null yaz
+- Tahmin yapma, sadece gördüğünü yaz
 
-Faturada İKİ FARKLI VKN olabilir - bunları KARIŞTIRMA:
+## SATICI vs ALICI AYRIMI
+- SATICI: Faturanın üstündeki firma (mal/hizmet satan)
+- ALICI: "Sayın", "Müşteri", "Alıcı" başlıkları altındaki kişi/firma
 
-### SATICI (Faturayı Kesen):
-- Faturanın EN ÜSTÜNDE yazan firma
-- Mal/hizmet SATAN taraf
+## VKN/TCKN KURALLARI
+- VKN: 10 haneli sayı
+- TCKN: 11 haneli sayı (0 ile başlamaz)
+- Metinde görmezsen null yaz
 
-### ALICI (Müşteri - BU ÖNEMLİ):
-- "SAYIN", "ALICI", "MÜŞTERİ" başlıkları altında
-- Faturanın KESİLDİĞİ taraf
-- BU VKN'Yİ KONTROL EDECEĞİZ!
-
-## FLO GRUP ŞİRKETLERİ (Sadece ALICI VKN olabilir)
-- 3880239429 → FLO Mağazacılık
-- 8721503797 → Turuncu Ayakkabı
-- 3881618492 → FLO Teknoloji
-- 3881765897 → FLO İç Dış Ticaret
-
-## BELGE TÜRÜ TESPİTİ
-- "e-arşiv fatura" veya "e-fatura" → FATURA
-- "fiş no" veya "yazar kasa" → FİŞ
+## BELGE TÜRÜ
+- "e-arşiv", "e-fatura", "fatura no" → FATURA
+- "fiş no", "yazar kasa" → FIS
 - "gider pusulası" → GIDER_PUSULASI
 
-## KRİTİK KURALLAR
+## KDV KURALLARI
+- KDV oranını metinde gördüğün gibi yaz
+- Metinde KDV oranı yoksa null yaz (sistem hesaplayacak)
+- UYDURMA!
 
-### TESK KURALI (TAKSİ FİŞLERİ)
-Taksi fişinde "TESK" ibaresi varsa → KDV %0
-TESK yoksa → KDV %20
+SADECE JSON DÖNDÜR, AÇIKLAMA YAPMA."""
 
-### KDV ORANLARI
-- Yemek/Konaklama/Tekstil: %10
-- Genel hizmet/mal: %20
-- TESK taksi: %0
-- Yurt dışı: belgedeki oran veya %0
-
-SADECE JSON FORMATINDA YANIT VER."""
-
-    CLAUDE_USER_PROMPT = """Aşağıdaki OCR metnini analiz et ve JSON formatında yapılandır.
+    CLAUDE_USER_PROMPT = """Bu OCR metnini JSON'a dönüştür. SADECE metinde gördüğün değerleri yaz, UYDURMA!
 
 OCR METNİ:
 {ocr_text}
 
-JSON formatı:
+JSON:
 {{
     "detected_language": "TR|EN|DE|FR|IT|ES",
     "header": {{
-        "belge_turu": "FATURA|FIS|GIDER_PUSULASI|BILGI_FISI",
-        "belge_no": "Belge numarası",
-        "belge_tarihi": "DD.MM.YYYY",
-        "saat": "HH:MM veya null",
+        "belge_turu": "FATURA|FIS|GIDER_PUSULASI|null",
+        "belge_no": "metindeki belge/fiş numarası veya null",
+        "belge_tarihi": "metindeki tarih veya null",
+        "saat": "metindeki saat veya null",
         "satici": {{
-            "vkn": "SATICI VKN (10 hane)",
-            "firma_adi": "Satıcı firma adı",
-            "adres": "Adres veya null"
+            "vkn": "metindeki 10 haneli satıcı VKN veya null",
+            "firma_adi": "metindeki satıcı adı veya null"
         }},
         "alici": {{
-            "vkn_veya_tckn": "ALICI bölümündeki VKN/TCKN",
-            "tip": "TUZEL_KISI|GERCEK_KISI|null",
-            "unvan_veya_ad": "Alıcı adı/ünvanı"
+            "vkn_veya_tckn": "Sayın/Alıcı/Müşteri bölümündeki VKN/TCKN veya null",
+            "unvan_veya_ad": "Alıcı adı veya null"
         }}
     }},
     "financials": {{
-        "brut_tutar": Brüt toplam (sayı),
-        "kdv_haric_tutar": KDV hariç tutar veya null,
-        "kdv_orani": KDV yüzdesi (0, 1, 8, 10, 18, 20),
-        "kdv_tutari": KDV miktarı veya null,
-        "para_birimi": "TRY|EUR|USD|CHF|GBP"
+        "brut_tutar": metindeki toplam tutar (sayı) veya null,
+        "kdv_haric_tutar": metindeki KDV hariç tutar veya null,
+        "kdv_orani": metindeki KDV oranı (sayı) veya null,
+        "kdv_tutari": metindeki KDV tutarı veya null,
+        "para_birimi": "TRY|EUR|USD|CHF|GBP|DOP|AED"
     }},
-    "items": [
-        {{
-            "aciklama": "Ürün/hizmet",
-            "miktar": Adet,
-            "birim_fiyat": Fiyat,
-            "tutar": Toplam
-        }}
-    ],
-    "tesk_detected": true/false,
-    "keywords_found": ["tespit edilen anahtar kelimeler"]
-}}"""
+    "tesk_detected": metinde TESK/Esnaf kelimesi var mı (true/false)
+}}
+
+HATIRLA: Metinde olmayan değer için null yaz, UYDURMA!"""
 
     def __init__(
         self,
@@ -209,6 +187,46 @@ JSON formatı:
             if re.search(pattern, text, re.IGNORECASE):
                 return True
         return False
+
+    def _validate_claude_output(self, data: Dict[str, Any], raw_text: str) -> Dict[str, Any]:
+        """
+        Validate that Claude's output values actually exist in raw_text.
+        If a value doesn't exist in raw_text, set it to None.
+        """
+        raw_text_lower = raw_text.lower()
+        raw_text_digits = re.findall(r'\d+[.,]?\d*', raw_text)
+
+        financials = data.get("financials", {})
+
+        # Validate brut_tutar exists in raw_text
+        brut = financials.get("brut_tutar")
+        if brut is not None:
+            brut_str = str(brut).replace('.', ',')
+            brut_str2 = str(brut).replace(',', '.')
+            if brut_str not in raw_text and brut_str2 not in raw_text:
+                # Try to find a close match
+                found = False
+                for num_str in raw_text_digits:
+                    try:
+                        num = float(num_str.replace(',', '.'))
+                        if abs(num - brut) < 0.01:
+                            found = True
+                            break
+                    except:
+                        pass
+                if not found:
+                    financials["brut_tutar_validated"] = False
+
+        # Validate KDV values
+        kdv_oran = financials.get("kdv_orani")
+        if kdv_oran is not None:
+            # Check if KDV rate pattern exists
+            kdv_patterns = [f"%{kdv_oran}", f"kdv {kdv_oran}", f"kdv%{kdv_oran}", f"kdv:{kdv_oran}"]
+            if not any(p in raw_text_lower for p in kdv_patterns):
+                financials["kdv_orani_validated"] = False
+
+        data["financials"] = financials
+        return data
 
     def _validate_vkn(self, vkn: str) -> bool:
         """Validate Turkish VKN checksum."""
@@ -287,11 +305,16 @@ JSON formatı:
 
     def _extract_text(self, image_path: str) -> OCRResult:
         """
-        Extract text using Google Vision, then analyze with Claude.
+        Extract and structure receipt data.
+
+        Architecture:
+        1. Google Vision API = Source of Truth (OCR metin çıkarma)
+        2. Claude API = Formatter only (JSON yapılandırma, veri üretmez)
+        3. KDV Heuristics = Works on Google's raw_text (matematiksel hesaplama)
         """
-        # Step 1: Google Vision OCR
+        # Step 1: Google Vision OCR (SOURCE OF TRUTH)
         google_result = self._google_engine.extract(image_path)
-        ocr_text = google_result.raw_text
+        ocr_text = google_result.raw_text  # This is our source of truth
         google_confidence = google_result.confidence
 
         if not ocr_text or len(ocr_text.strip()) < 10:
@@ -338,6 +361,10 @@ JSON formatı:
                 response_text = "\n".join(json_lines)
 
             data = json.loads(response_text)
+
+            # Validate Claude's output against raw_text
+            data = self._validate_claude_output(data, ocr_text)
+
         except json.JSONDecodeError as e:
             return OCRResult(
                 raw_text=ocr_text,
@@ -380,6 +407,7 @@ JSON formatı:
                 financials["kdv_notu"] = "Taksi fişi TESK yok - KDV %20"
 
         # Step 5: Mathematical Heuristics for KDV
+        # IMPORTANT: Heuristics work on Google Vision's raw_text (ocr_text), NOT Claude's output
         kdv_heuristics_result = None
         if TAX_CALCULATOR_AVAILABLE:
             brut_tutar = financials.get("brut_tutar")
@@ -389,6 +417,7 @@ JSON formatı:
             if brut_tutar and (ocr_kdv_orani is None or ocr_kdv_tutari is None):
                 tax_calc = TaxCalculator()
                 semantic = SemanticCompleter()
+                # Semantic completion on Google Vision's raw_text
                 semantic_result = semantic.complete_text(ocr_text)
 
                 kdv_result = tax_calc.calculate_kdv(
