@@ -1,5 +1,5 @@
 """
-Claude Vision OCR Engine - FLO Masraf Modülü v2
+Claude Vision OCR Engine - FLO Masraf Modülü v3
 Direct image-to-structured-data using Claude's multimodal capabilities.
 
 Features:
@@ -10,6 +10,8 @@ Features:
 - KKEG calculation (vehicle expenses 70/30 split)
 - VKN checksum validation
 - Document type detection (Fatura, Fiş, Gider Pusulası, Bilgi Fişi)
+- Employee name fuzzy matching (Levenshtein Distance)
+- Personal invoice rejection rule
 """
 
 import os
@@ -168,6 +170,184 @@ LANGUAGE_PATTERNS = {
     "ES": ["total", "iva", "fecha", "factura", "recibo", "importe", "pago"],
 }
 
+# =============================================================================
+# EMPLOYEE LIST (FLO Çalışan Listesi)
+# Bu liste SAP/HR sisteminden çekilmeli veya config dosyasından yüklenmeli
+# =============================================================================
+EMPLOYEE_LIST = [
+    # Örnek çalışan listesi - gerçek liste FLO'dan alınacak
+    "Ahmet Yılmaz",
+    "Mehmet Kaya",
+    "Ayşe Demir",
+    "Fatma Çelik",
+    "Ali Öztürk",
+    "Zeynep Arslan",
+    "Mustafa Şahin",
+    "Emine Yıldız",
+    "Hasan Aydın",
+    "Hatice Koç",
+    "İbrahim Korkmaz",
+    "Hacer Özdemir",
+    "Osman Çetin",
+    "Elif Erdoğan",
+    "Hüseyin Kılıç",
+    "Merve Aksoy",
+    "Murat Polat",
+    "Esra Özkan",
+    "Emre Şen",
+    "Büşra Yılmazer",
+    "Serkan Güneş",
+    "Seda Kaplan",
+    "Burak Acar",
+    "Gizem Tekin",
+    "Onur Aktaş",
+    "Gamze Doğan",
+    "Cem Yalçın",
+    "Deniz Çakır",
+    "Tuncay Bayrak",
+    "Sibel Aslan",
+    # ... Daha fazla çalışan eklenebilir
+]
+
+# Minimum similarity threshold for name matching (80%)
+NAME_SIMILARITY_THRESHOLD = 0.80
+
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def levenshtein_distance(s1: str, s2: str) -> int:
+    """
+    Calculate the Levenshtein distance between two strings.
+
+    The Levenshtein distance is the minimum number of single-character edits
+    (insertions, deletions, or substitutions) required to change one string
+    into the other.
+    """
+    if len(s1) < len(s2):
+        return levenshtein_distance(s2, s1)
+
+    if len(s2) == 0:
+        return len(s1)
+
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            # j+1 instead of j since previous_row and current_row are one character longer
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+
+def calculate_similarity(s1: str, s2: str) -> float:
+    """
+    Calculate similarity ratio between two strings using Levenshtein distance.
+
+    Returns a value between 0.0 (completely different) and 1.0 (identical).
+    """
+    if not s1 or not s2:
+        return 0.0
+
+    # Normalize strings: lowercase and strip
+    s1_norm = s1.lower().strip()
+    s2_norm = s2.lower().strip()
+
+    if s1_norm == s2_norm:
+        return 1.0
+
+    distance = levenshtein_distance(s1_norm, s2_norm)
+    max_len = max(len(s1_norm), len(s2_norm))
+
+    if max_len == 0:
+        return 1.0
+
+    return 1.0 - (distance / max_len)
+
+
+def find_matching_employee(name: str, employee_list: List[str] = None, threshold: float = NAME_SIMILARITY_THRESHOLD) -> Tuple[Optional[str], float]:
+    """
+    Find the best matching employee name from the list.
+
+    Args:
+        name: The OCR-read name to match
+        employee_list: List of employee names (uses default if None)
+        threshold: Minimum similarity threshold (default 0.80 = 80%)
+
+    Returns:
+        Tuple of (matched_name, similarity_score) or (None, 0.0) if no match
+    """
+    if not name:
+        return None, 0.0
+
+    if employee_list is None:
+        employee_list = EMPLOYEE_LIST
+
+    best_match = None
+    best_score = 0.0
+
+    name_normalized = name.lower().strip()
+
+    for employee in employee_list:
+        score = calculate_similarity(name_normalized, employee.lower().strip())
+        if score > best_score:
+            best_score = score
+            best_match = employee
+
+    if best_score >= threshold:
+        return best_match, best_score
+
+    return None, best_score
+
+
+def is_personal_name(name: str) -> bool:
+    """
+    Check if a string looks like a personal name (not a company name).
+
+    Personal names typically:
+    - Don't contain company suffixes (A.Ş., LTD., ŞTİ., etc.)
+    - Are shorter
+    - Contain common Turkish name patterns
+    """
+    if not name:
+        return False
+
+    name_upper = name.upper()
+
+    # Company suffixes that indicate it's NOT a personal name
+    company_indicators = [
+        "A.Ş.", "A.Ş", "AŞ", "A.S.",
+        "LTD.", "LTD", "LİMİTED",
+        "ŞTİ.", "ŞTİ", "STI.", "STI",
+        "SAN.", "SAN", "SANAYİ",
+        "TİC.", "TİC", "TİCARET",
+        "GIDA", "TEKSTİL", "OTOMOTİV",
+        "MARKET", "MAĞAZA", "RESTORAN",
+        "INC.", "LLC", "GMBH", "AG",
+        "CORPORATION", "CORP.",
+    ]
+
+    for indicator in company_indicators:
+        if indicator in name_upper:
+            return False
+
+    # If name is very long, probably a company
+    if len(name) > 50:
+        return False
+
+    # If name has more than 4 words, probably a company
+    words = name.split()
+    if len(words) > 4:
+        return False
+
+    # If all checks pass, assume it could be a personal name
+    return True
+
 
 @dataclass
 class KKEGCalculation:
@@ -198,7 +378,9 @@ class ClaudeVisionEngine(BaseOCREngine):
     - Account code matching from 66 keywords
     - Withholding tax detection
     - KKEG calculation for vehicle expenses
-    - VKN checksum validation
+    - VKN/TCKN checksum validation
+    - Employee name fuzzy matching (Levenshtein Distance, 80% threshold)
+    - Personal invoice rejection rule
     """
 
     name = "claude_vision"
@@ -207,16 +389,31 @@ class ClaudeVisionEngine(BaseOCREngine):
     SYSTEM_PROMPT = """Sen FLO Grup şirketleri için çok dilli fiş/fatura OCR ve analiz uzmanısın.
 
 ## GÖREV
-Görüntüdeki fiş/fatura metnini oku (Türkçe, İngilizce, Almanca, Fransızca, İtalyanca, İspanyolca olabilir) ve SAP'ye aktarılabilecek yapılandırılmış JSON üret.
+Görüntüdeki fiş/fatura metnini oku ve SAP'ye aktarılabilecek yapılandırılmış JSON üret.
 
-## FLO GRUP ŞİRKETLERİ (Geçerli Alıcı VKN'leri)
-- FLO Mağazacılık: 3880239429
-- Turuncu Ayakkabı: 8721503797
-- FLO Teknoloji: 3881618492
-- FLO İç Dış Ticaret: 3881765897
+## ÇOK ÖNEMLİ: SATICI ve ALICI AYRIMI
+
+Faturada İKİ FARKLI VKN olabilir - bunları KARIŞTIRMA:
+
+### SATICI (Üstteki/Faturayı Kesen):
+- Faturanın EN ÜSTÜNDE yazan firma
+- "Satıcı", "Firma", "Şirket" başlığı altında
+- Mal/hizmet SATAN taraf
+
+### ALICI (Alttaki/Müşteri - BU ÖNEMLİ):
+- "SAYIN", "ALICI", "MÜŞTERİ", "Customer", "To:", "Bill To:" başlıkları altında
+- Faturanın KESİLDİĞİ taraf
+- BU VKN'Yİ KONTROL EDECEĞİZ!
+
+## FLO GRUP ŞİRKETLERİ (Sadece ALICI VKN olabilir)
+- 3880239429 → FLO Mağazacılık
+- 8721503797 → Turuncu Ayakkabı
+- 3881618492 → FLO Teknoloji
+- 3881765897 → FLO İç Dış Ticaret
+
+ALICI bölümündeki VKN bu 4 şirketten biri DEĞİLSE veya orada şahıs ismi yazıyorsa → RED
 
 ## DİL TESPİTİ
-Belgenin dilini tespit et:
 - Türkçe: "toplam", "kdv", "tarih", "fatura"
 - İngilizce: "total", "vat", "date", "invoice"
 - Almanca: "gesamt", "mwst", "datum", "rechnung"
@@ -236,10 +433,12 @@ Taksi fişinde "TESK" (Türkiye Esnaf ve Sanatkarları Konfederasyonu) ibaresi v
 - KDV oranı = %0
 - Eğer TESK yoksa KDV = %20
 
-### 2. ALICI KONTROLÜ
-- Alıcı mutlaka FLO şirketlerinden biri olmalı
-- TCKN (11 hane) → Şahıs → RED
-- VKN (10 hane) FLO listesinde değilse → RED
+### 2. ALICI KONTROLÜ (EN ÖNEMLİ KURAL)
+SADECE "Sayın/Alıcı/Müşteri" bölümündeki bilgiyi kontrol et:
+- Orada VKN varsa → 4'lü FLO listesiyle karşılaştır
+- Orada TCKN varsa (11 hane) → Şahıs faturası → RED
+- Orada sadece kişi ismi varsa → Şahıs faturası → RED
+- VKN yoksa ve alıcı bilgisi yoksa → Perakende fiş
 
 ### 3. TEVKİFAT TESPİTİ
 Aşağıdakilerden biri varsa tevkifatlı:
@@ -269,11 +468,20 @@ SADECE JSON FORMATINDA YANIT VER."""
 
     USER_PROMPT = """Bu fiş/fatura görüntüsünü analiz et.
 
+## ADIMLAR:
 1. Belgenin dilini tespit et
 2. Tüm metni oku
 3. TESK ibaresi var mı kontrol et (taksi fişi ise)
-4. Satıcı ve Alıcı bilgilerini ayrı tespit et
-5. SAP uyumlu JSON üret
+4. SATICI bilgilerini bul (faturayı KESEN firma - genelde üstte)
+5. ALICI bilgilerini bul (faturanın KESİLDİĞİ taraf):
+   - "SAYIN", "ALICI", "MÜŞTERİ", "Customer", "To:", "Bill To:" başlıklarını ara
+   - Bu başlıkların ALTINDA veya YANINDA yazan VKN/TCKN/ismi al
+   - SATICI VKN'yi ALICI olarak yazma!
+
+## ÖNEMLİ:
+- Faturada 2 VKN olabilir: biri SATICI, biri ALICI
+- Sadece ALICI bölümündeki VKN'yi "alici.vkn_veya_tckn" alanına yaz
+- Eğer ALICI bölümünde VKN yoksa ve sadece kişi ismi varsa, onu "alici.unvan_veya_ad" alanına yaz
 
 JSON formatı:
 {
@@ -287,15 +495,16 @@ JSON formatı:
         "belge_tarihi": "DD.MM.YYYY formatında",
         "saat": "HH:MM veya null",
         "satici": {
-            "vkn": "Satıcı VKN (10 hane) veya vergi no",
+            "vkn": "SATICI VKN (faturayı kesen firma)",
             "firma_adi": "Satıcı firma adı",
             "adres": "Adres veya null",
             "ulke": "Ülke kodu (TR, DE, CH, vb.)"
         },
         "alici": {
-            "vkn_veya_tckn": "Alıcı VKN/TCKN veya null",
+            "vkn_veya_tckn": "ALICI bölümündeki VKN/TCKN (Sayın/Müşteri altındaki)",
             "tip": "TUZEL_KISI|GERCEK_KISI|null",
-            "unvan_veya_ad": "Şirket ünvanı veya şahıs adı veya null"
+            "unvan_veya_ad": "ALICI bölümündeki şirket adı veya kişi ismi",
+            "adres": "Alıcı adresi veya null"
         }
     },
     "financials": {
@@ -585,8 +794,18 @@ JSON formatı:
                     financials["kdv_notu"] = f"{category.title()} kategorisi - varsayılan KDV %{rate}"
                 break
 
-    def _validate_buyer(self, alici: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate buyer against FLO companies."""
+    def _validate_buyer(self, alici: Dict[str, Any], employee_list: List[str] = None) -> Dict[str, Any]:
+        """
+        Validate buyer against FLO companies and employee list.
+
+        Rules:
+        1. If VKN exists and matches FLO company -> APPROVED
+        2. If TCKN exists (11 digits) -> Personal invoice -> REJECTED
+        3. If name exists but no VKN:
+           a. Check if name matches employee list (80% similarity)
+           b. If match found -> correct the name, still REJECTED (personal invoice)
+           c. If no match and looks like personal name -> REJECTED
+        """
         if not alici:
             return {
                 "alici_gecerli": True,
@@ -596,51 +815,117 @@ JSON formatı:
             }
 
         vkn_or_tckn = alici.get("vkn_veya_tckn") or alici.get("vkn")
+        alici_adi = alici.get("unvan_veya_ad") or alici.get("ad_soyad") or alici.get("firma_adi")
 
-        if not vkn_or_tckn:
+        # Case 1: VKN/TCKN exists
+        if vkn_or_tckn:
+            clean_id = re.sub(r'\D', '', str(vkn_or_tckn))
+
+            if len(clean_id) == 11:
+                # TCKN - Personal ID number
+                tckn_valid = self._validate_tckn_checksum(clean_id)
+
+                # Try to match name with employee list
+                matched_employee, similarity = find_matching_employee(alici_adi, employee_list)
+
+                result = {
+                    "alici_gecerli": False,
+                    "alici_tipi": "GERCEK_KISI",
+                    "tckn_checksum_valid": tckn_valid,
+                    "islem_durumu": "REDDEDILDI",
+                    "red_sebebi": "Şahıs adına kesilmiş fatura - FLO masraf politikasına aykırı"
+                }
+
+                if matched_employee:
+                    result["calisan_eslesmesi"] = {
+                        "okunan_isim": alici_adi,
+                        "duzeltilmis_isim": matched_employee,
+                        "benzerlik_orani": round(similarity * 100, 1),
+                        "eslesti": True
+                    }
+                    result["red_sebebi"] = f"Şahıs faturası - Çalışan: {matched_employee}"
+
+                return result
+
+            elif len(clean_id) == 10:
+                # VKN - Company tax number
+                vkn_valid = self._validate_vkn_checksum(clean_id)
+
+                if clean_id in FLO_COMPANIES:
+                    return {
+                        "alici_gecerli": True,
+                        "alici_flo_sirketi": FLO_COMPANIES[clean_id]["name"],
+                        "alici_flo_kodu": FLO_COMPANIES[clean_id]["code"],
+                        "alici_tipi": "TUZEL_KISI",
+                        "vkn_checksum_valid": vkn_valid,
+                        "islem_durumu": "ONAYLANDI"
+                    }
+                else:
+                    return {
+                        "alici_gecerli": False,
+                        "alici_tipi": "TUZEL_KISI",
+                        "vkn_checksum_valid": vkn_valid,
+                        "islem_durumu": "REDDEDILDI",
+                        "red_sebebi": "Alıcı FLO Grup şirketlerinden biri değil"
+                    }
+            else:
+                return {
+                    "alici_gecerli": False,
+                    "islem_durumu": "REDDEDILDI",
+                    "red_sebebi": f"Geçersiz VKN/TCKN formatı: {len(clean_id)} hane"
+                }
+
+        # Case 2: No VKN but name exists - Check if it's a personal name
+        elif alici_adi:
+            # First, try to match with employee list
+            matched_employee, similarity = find_matching_employee(alici_adi, employee_list)
+
+            if matched_employee:
+                # Name matches an employee - Personal invoice REJECTED
+                return {
+                    "alici_gecerli": False,
+                    "alici_tipi": "GERCEK_KISI",
+                    "islem_durumu": "REDDEDILDI",
+                    "red_sebebi": f"Şahıs faturası - Çalışan: {matched_employee}",
+                    "calisan_eslesmesi": {
+                        "okunan_isim": alici_adi,
+                        "duzeltilmis_isim": matched_employee,
+                        "benzerlik_orani": round(similarity * 100, 1),
+                        "eslesti": True
+                    }
+                }
+
+            # Check if it looks like a personal name (no company suffix, etc.)
+            elif is_personal_name(alici_adi):
+                return {
+                    "alici_gecerli": False,
+                    "alici_tipi": "GERCEK_KISI",
+                    "islem_durumu": "REDDEDILDI",
+                    "red_sebebi": "Şahıs adına kesilmiş fatura (VKN yok, kişisel isim tespit edildi)",
+                    "calisan_eslesmesi": {
+                        "okunan_isim": alici_adi,
+                        "duzeltilmis_isim": None,
+                        "benzerlik_orani": round(similarity * 100, 1) if similarity else 0,
+                        "eslesti": False,
+                        "not": "İsim çalışan listesinde bulunamadı"
+                    }
+                }
+            else:
+                # Looks like a company name but no VKN
+                return {
+                    "alici_gecerli": False,
+                    "alici_tipi": "TUZEL_KISI",
+                    "islem_durumu": "REDDEDILDI",
+                    "red_sebebi": "Alıcı VKN bilgisi eksik"
+                }
+
+        # Case 3: No VKN and no name - Retail receipt
+        else:
             return {
                 "alici_gecerli": True,
                 "alici_tipi": "PERAKENDE",
                 "islem_durumu": "ONAYLANDI",
                 "not": "Perakende satış fişi"
-            }
-
-        clean_id = re.sub(r'\D', '', str(vkn_or_tckn))
-
-        if len(clean_id) == 11:
-            tckn_valid = self._validate_tckn_checksum(clean_id)
-            return {
-                "alici_gecerli": False,
-                "alici_tipi": "GERCEK_KISI",
-                "tckn_checksum_valid": tckn_valid,
-                "islem_durumu": "REDDEDILDI",
-                "red_sebebi": "Şahıs adına kesilmiş fatura - FLO masraf politikasına aykırı"
-            }
-        elif len(clean_id) == 10:
-            vkn_valid = self._validate_vkn_checksum(clean_id)
-
-            if clean_id in FLO_COMPANIES:
-                return {
-                    "alici_gecerli": True,
-                    "alici_flo_sirketi": FLO_COMPANIES[clean_id]["name"],
-                    "alici_flo_kodu": FLO_COMPANIES[clean_id]["code"],
-                    "alici_tipi": "TUZEL_KISI",
-                    "vkn_checksum_valid": vkn_valid,
-                    "islem_durumu": "ONAYLANDI"
-                }
-            else:
-                return {
-                    "alici_gecerli": False,
-                    "alici_tipi": "TUZEL_KISI",
-                    "vkn_checksum_valid": vkn_valid,
-                    "islem_durumu": "REDDEDILDI",
-                    "red_sebebi": "Alıcı FLO Grup şirketlerinden biri değil"
-                }
-        else:
-            return {
-                "alici_gecerli": False,
-                "islem_durumu": "REDDEDILDI",
-                "red_sebebi": f"Geçersiz VKN/TCKN formatı: {len(clean_id)} hane"
             }
 
     def _extract_text(self, image_path: str) -> OCRResult:
