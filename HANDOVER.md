@@ -105,6 +105,53 @@ Bu proje **temiz versiyon kontrol yapısına** (clean codebase) sahiptir:
 
 ---
 
+## Data Privacy & KVKK
+
+### KVKK Uyumluluk Durumu
+
+Bu proje **6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK)** gerekliliklerine uygun olarak yapılandırılmıştır.
+
+#### Teknik Önlemler
+
+| Önlem | Uygulama | Durum |
+|-------|----------|-------|
+| **PII İzolasyonu** | Test verileri (fiş/fatura görselleri) repo'da barındırılmaz | ✅ Aktif |
+| **Git Geçmişi Temizliği** | Tüm görsel dosyalar geçmişten `git filter-branch` ile silindi | ✅ Tamamlandı |
+| **Gitignore Koruması** | `*.jpg`, `*.png`, `*.pdf`, `**/results*` patterns | ✅ Aktif |
+| **Credential Koruması** | API anahtarları ve credentials `.gitignore`'da | ✅ Aktif |
+
+#### Repoda Barındırılmayan Veri Türleri
+
+```
+# KVKK Kapsamında Korunan Veriler (PII - Personally Identifiable Information)
+- Fiş/fatura görselleri (*.jpg, *.png, *.jpeg, *.pdf)
+- OCR sonuç dosyaları (*_results.json, *_sonuclari.json)
+- Test çıktıları (results/, output/ klasörleri)
+- VKN/TCKN içeren raw data
+- Çalışan bilgileri
+```
+
+#### Git Geçmişi Temizlik Kaydı
+
+```
+Tarih: 2026-02-02
+Yöntem: git filter-branch --index-filter
+Silinen Dosya Türleri:
+  - *.png, *.jpg, *.jpeg (görsel dosyalar)
+  - results/, results_classic/, results_final/, results_manual/
+  - *_results.csv, *_results.json
+Force Push: Evet (origin/main üzerine yazıldı)
+```
+
+#### Veri İşleme Prensibi
+
+1. **Minimize Etme**: Sadece gerekli veri işlenir
+2. **Lokalizasyon**: Test verileri sadece local ortamda tutulur
+3. **Temizlik**: İşlem sonrası veriler silinir
+4. **İzlenebilirlik**: Tüm veri işlemleri loglanır (local)
+
+---
+
 ## TODO / Future Work
 
 - [ ] SAP/HR entegrasyonu ile çalışan eşleştirme

@@ -1,7 +1,18 @@
 # =============================================================================
 # FLO OCR PROJECT - GITIGNORE
-# Kurumsal standart repo hijyeni
+# Kurumsal standart repo hijyeni + KVKK Uyumlulugu
 # =============================================================================
+
+# -----------------------------------------------------------------------------
+# KVKK UYUMLULUGU - HASSAS VERI KORUMASI (KRITIK)
+# -----------------------------------------------------------------------------
+# Kisisel veri iceren goruntuler ve sonuc dosyalari
+**/results*
+**/output*
+*.png
+*.jpg
+*.jpeg
+*.pdf
 
 # -----------------------------------------------------------------------------
 # CLAUDE / AI ASSISTANT FILES (KRITIK - ASLA COMMIT ETME)
