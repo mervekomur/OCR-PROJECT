@@ -1,10 +1,51 @@
-# Data files
+# =============================================================================
+# FLO OCR PROJECT - GITIGNORE
+# Kurumsal standart repo hijyeni
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# CLAUDE / AI ASSISTANT FILES (KRITIK - ASLA COMMIT ETME)
+# -----------------------------------------------------------------------------
+.claude/
+claude_history.json
+claude_conversation*.json
+*_conversation.json
+*_chat_history*
+
+# -----------------------------------------------------------------------------
+# TEST SONUCLARI VE GECICI CIKTILAR
+# -----------------------------------------------------------------------------
+test_results/
+*_sonuclari.json
+*_results.json
+*_results.csv
+comparison_results.json
+evaluation_results*.json
+
+# Benchmark sonuclari (koddan ayri tutulmali)
+ablation_results.csv
+benchmark_results.csv
+detailed_benchmark.csv
+preprocessing_benchmark*.csv
+
+# Gecici analiz dosyalari
+_temp_*.txt
+taksi_tesk_analiz*.json
+
+# -----------------------------------------------------------------------------
+# DATA FILES
+# -----------------------------------------------------------------------------
 data/
 input/
 output/
-# *.json - ground_truth.json ve evaluation sonuclari icin kaldirildi
+final_output/
+final_receipts.json
+parsed_receipts.json
+receipt_extraction_*.csv
 
-# Python
+# -----------------------------------------------------------------------------
+# PYTHON
+# -----------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -13,58 +54,97 @@ __pycache__/
 venv/
 env/
 .env
+.env.local
+.env.*.local
 
-# IDE
+# -----------------------------------------------------------------------------
+# IDE / EDITOR
+# -----------------------------------------------------------------------------
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-*
 
-# OS
+# -----------------------------------------------------------------------------
+# OS FILES
+# -----------------------------------------------------------------------------
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log
-
-# Temp files
-tmpclaude-*
+Desktop.ini
 nul
-*.jpg
-*.png
 
-# Model files (too large for git)
+# -----------------------------------------------------------------------------
+# LOGS
+# -----------------------------------------------------------------------------
+*.log
+logs/
+*.log.*
+
+# -----------------------------------------------------------------------------
+# TEMP FILES
+# -----------------------------------------------------------------------------
+tmpclaude-*
+tmp/
+temp/
+*.tmp
+
+# -----------------------------------------------------------------------------
+# MEDIA FILES (test goruntuler local'de kalmali)
+# -----------------------------------------------------------------------------
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.bmp
+*.tiff
+
+# -----------------------------------------------------------------------------
+# MODEL FILES (buyuk dosyalar)
+# -----------------------------------------------------------------------------
 *.pth
 *.pt
 *.onnx
+*.h5
+*.pkl
+*.pickle
 
-# External libraries (cloned repos)
+# -----------------------------------------------------------------------------
+# EXTERNAL LIBRARIES
+# -----------------------------------------------------------------------------
 external_lib/
+node_modules/
 
-# Output directories
+# -----------------------------------------------------------------------------
+# OUTPUT DIRECTORIES
+# -----------------------------------------------------------------------------
 sam_results/
 debug_*.jpg
-
-# Experiments (local tests)
 experiments/
 
-# Google Cloud credentials (sensitive)
+# -----------------------------------------------------------------------------
+# CREDENTIALS (HASSAS - ASLA COMMIT ETME)
+# -----------------------------------------------------------------------------
 pebble-451721-bdc8fa59a91d.json
 *-credentials.json
 *-service-account.json
-.claude/
+*.pem
+*.key
+secrets/
+credentials/
 
-# Gecici cikti dosyalari
-final_output/
-final_receipts.json
-parsed_receipts.json
-preprocessing_benchmark.csv
-receipt_extraction_*.csv
-
-# Eski scriptler
+# -----------------------------------------------------------------------------
+# ESKI / DEPRECATED SCRIPTLER
+# -----------------------------------------------------------------------------
 benchmark_paddle.py
 benchmark_specific.py
 simple_ocr_pipeline.py
 
-# Analiz dokumanlari
+# -----------------------------------------------------------------------------
+# DOKUMANLAR (Word vb.)
+# -----------------------------------------------------------------------------
 *.docx
+*.doc
+*.xlsx
+*.xls
