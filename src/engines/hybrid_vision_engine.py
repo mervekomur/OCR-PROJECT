@@ -63,12 +63,19 @@ class HybridVisionEngine(BaseOCREngine):
     name = "hybrid_vision"
     description = "Google Vision OCR + Claude Analysis - FLO Masraf Modülü"
 
-    CLAUDE_SYSTEM_PROMPT = """Sen bir JSON formatlayıcısısın. Görevin OCR metnini yapılandırılmış JSON'a dönüştürmek.
+    CLAUDE_SYSTEM_PROMPT = """Sen bir finansal belge analiz uzmanısın. Görevin OCR metnini yapılandırılmış JSON'a dönüştürmek.
 
-## KRİTİK KURAL: SADECE METİNDEKİ VERİYİ KULLAN!
+## ÖNCELİKLİ TUTAR ANALİZİ (EL YAZISI DAHİL)
+- Döküman üzerindeki EL YAZISI rakamları ve toplam tutar (TOPLAM/TOTAL/TUTAR/TOP) ibarelerini ÖNCELİKLE analiz et
+- El yazısı ile yazılmış rakamları dikkatlice oku (980, 150, 250 gibi)
+- "TOPLAM", "TOTAL", "TUTAR", "TOP.", "GENEL TOPLAM", "ÖDENECEK" kelimelerinin yanındaki rakamları bul
+- Eğer net bir tutar bulunamazsa, metin içindeki EN BÜYÜK sayısal değeri brut_tutar adayı olarak değerlendir
+- Taksi fişlerinde genellikle el yazısı ile tutar yazılır - bu değerleri yakala
+
+## KRİTİK KURAL: VERİYİ DOĞRU ÇEK
 - Metinde OLMAYAN veriyi UYDURMA
-- Bir değer metinde yoksa null yaz
-- Tahmin yapma, sadece gördüğünü yaz
+- Ancak el yazısı dahil TÜM rakamları dikkatle analiz et
+- Sayıları nokta/virgül ile ayır (980.00 veya 980,00)
 
 ## SATICI vs ALICI AYRIMI
 - SATICI: Faturanın üstündeki firma (mal/hizmet satan)
@@ -81,17 +88,23 @@ class HybridVisionEngine(BaseOCREngine):
 
 ## BELGE TÜRÜ
 - "e-arşiv", "e-fatura", "fatura no" → FATURA
-- "fiş no", "yazar kasa" → FIS
+- "fiş no", "yazar kasa", "taksi" → FIS
 - "gider pusulası" → GIDER_PUSULASI
 
 ## KDV KURALLARI
 - KDV oranını metinde gördüğün gibi yaz
 - Metinde KDV oranı yoksa null yaz (sistem hesaplayacak)
-- UYDURMA!
 
 SADECE JSON DÖNDÜR, AÇIKLAMA YAPMA."""
 
-    CLAUDE_USER_PROMPT = """Bu OCR metnini JSON'a dönüştür. SADECE metinde gördüğün değerleri yaz, UYDURMA!
+    CLAUDE_USER_PROMPT = """Bu OCR metnini JSON'a dönüştür.
+
+## TUTAR ANALİZİ (ÇOK ÖNEMLİ!)
+1. Önce "TOPLAM", "TOTAL", "TUTAR", "TOP.", "GENEL TOPLAM", "ÖDENECEK" kelimelerini bul
+2. Bu kelimelerin yanındaki veya altındaki rakamı brut_tutar olarak al
+3. El yazısı ile yazılmış rakamları da dikkatle oku (örn: 980, 150, 1250)
+4. Eğer net tutar bulunamazsa, metindeki EN BÜYÜK sayısal değeri brut_tutar yap
+5. brut_tutar ASLA 0 veya null OLMAMALI - mutlaka bir değer bul!
 
 OCR METNİ:
 {ocr_text}
@@ -114,16 +127,17 @@ JSON:
         }}
     }},
     "financials": {{
-        "brut_tutar": metindeki toplam tutar (sayı) veya null,
+        "brut_tutar": TOPLAM/TOTAL yanındaki rakam VEYA metindeki en büyük sayı (ASLA 0 olmasın!),
         "kdv_haric_tutar": metindeki KDV hariç tutar veya null,
         "kdv_orani": metindeki KDV oranı (sayı) veya null,
         "kdv_tutari": metindeki KDV tutarı veya null,
         "para_birimi": "TRY|EUR|USD|CHF|GBP|DOP|AED"
     }},
-    "tesk_detected": metinde TESK/Esnaf kelimesi var mı (true/false)
+    "tesk_detected": metinde TESK/Esnaf kelimesi var mı (true/false),
+    "tutar_kaynak": "TOPLAM kelimesinden|En büyük sayıdan|El yazısından"
 }}
 
-HATIRLA: Metinde olmayan değer için null yaz, UYDURMA!"""
+ÖNEMLİ: brut_tutar için metindeki tüm sayıları analiz et, en mantıklı toplam tutarı seç!"""
 
     def __init__(
         self,
@@ -382,6 +396,31 @@ HATIRLA: Metinde olmayan değer için null yaz, UYDURMA!"""
         items = data.get("items", [])
         claude_language = data.get("detected_language", detected_language)
         tesk_from_claude = data.get("tesk_detected", False)
+
+        # FALLBACK: Eğer brut_tutar 0 veya None ise, raw text'ten en büyük sayıyı çek
+        brut_tutar = financials.get("brut_tutar")
+        if brut_tutar is None or brut_tutar == 0:
+            # Raw text'ten sayıları çıkar
+            numbers = re.findall(r'(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?|\d+[.,]\d{1,2}|\d+)', ocr_text)
+            valid_amounts = []
+            for num_str in numbers:
+                try:
+                    # Türkçe format: 1.234,56 veya 1234,56
+                    cleaned = num_str.replace('.', '').replace(',', '.')
+                    if cleaned.count('.') > 1:
+                        cleaned = cleaned.replace('.', '', cleaned.count('.') - 1)
+                    amount = float(cleaned)
+                    # Makul tutar aralığı (1 ile 100000 arası)
+                    if 1 <= amount <= 100000:
+                        valid_amounts.append(amount)
+                except:
+                    pass
+
+            if valid_amounts:
+                # En büyük tutarı al
+                max_amount = max(valid_amounts)
+                financials["brut_tutar"] = max_amount
+                financials["tutar_kaynak"] = "fallback_max_number"
 
         # Update language detection
         detected_language = claude_language if claude_language else detected_language
