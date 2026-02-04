@@ -1,45 +1,22 @@
-# OCR Receipt Parser - Python Dependencies
-# ==========================================
+# FLO OCR - Streamlit Cloud Dependencies
+# ========================================
 
-# Core OCR Engines
-easyocr>=1.7.0
+# Web Framework
+streamlit>=1.31.0
 
-# PaddleOCR (optional - uncomment to install)
-# paddlepaddle>=2.5.0
-# paddleocr>=2.7.0
+# Google Cloud Vision API
+google-cloud-vision>=3.5.0
 
-# Donut & GOT-OCR (optional - uncomment to install)
-# torch>=2.0.0
-# transformers>=4.35.0
+# Claude API
+anthropic>=0.18.0
 
 # Image Processing
-opencv-python>=4.8.0
+opencv-python-headless>=4.8.0
 numpy>=1.24.0
 Pillow>=10.0.0
 
 # Utilities
-# python-dotenv>=1.0.0
+python-dotenv>=1.0.0
 
-# Testing (optional)
-# pytest>=7.4.0
-
-# ==========================================
-# INSTALLATION NOTES:
-# ==========================================
-#
-# Basic installation (EasyOCR only):
-#   pip install -r requirements.txt
-#
-# With PaddleOCR:
-#   pip install paddlepaddle paddleocr
-#
-# With Donut:
-#   pip install torch transformers
-#
-# With GOT-OCR:
-#   pip install torch transformers
-#   (requires GPU for best performance)
-#
-# Full installation (all engines):
-#   pip install easyocr paddlepaddle paddleocr torch transformers opencv-python numpy Pillow
-#
+# PDF Generation (optional)
+fpdf2>=2.7.0

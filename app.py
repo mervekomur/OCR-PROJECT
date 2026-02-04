@@ -9,12 +9,35 @@ import json
 import os
 import sys
 import base64
+import tempfile
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
 sys.path.insert(0, str(Path(__file__).parent / "src"))
+
+# Streamlit Cloud secrets support
+def get_secret(key, default=None):
+    """Get secret from Streamlit Cloud or environment variable"""
+    try:
+        return st.secrets.get(key, os.environ.get(key, default))
+    except:
+        return os.environ.get(key, default)
+
+# Set environment variables from Streamlit secrets (for Google Vision)
+try:
+    if "GOOGLE_CREDENTIALS_JSON" in st.secrets:
+        # Write Google credentials to temp file for Streamlit Cloud
+        creds_json = st.secrets["GOOGLE_CREDENTIALS_JSON"]
+        creds_path = Path(tempfile.gettempdir()) / "google_creds.json"
+        creds_path.write_text(creds_json)
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(creds_path)
+
+    if "ANTHROPIC_API_KEY" in st.secrets:
+        os.environ["ANTHROPIC_API_KEY"] = st.secrets["ANTHROPIC_API_KEY"]
+except Exception:
+    pass  # Local development - use .env file
 
 st.set_page_config(
     page_title="FLO OCR | RG Labs",
