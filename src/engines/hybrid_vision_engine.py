@@ -226,25 +226,39 @@ JSON:
             }
             media_type = media_type_map.get(ext, "image/jpeg")
 
-            # Claude Vision'a gönder
-            prompt = f"""Bu taksi fişi/makbuz görüntüsündeki EL YAZISI ile yazılmış TOPLAM TUTAR rakamını oku.
+            # Claude Vision'a gönder - Gelişmiş El Yazısı Analiz Promptu
+            prompt = f"""Sen finansal dökümanlar üzerinde uzmanlaşmış, özellikle el yazısı (Handwritten) verileri analiz eden kıdemli bir OCR denetçisisin.
 
-OCR sistemi bu tutarı {ocr_amount} TL olarak okudu.
+OCR sistemi bu fişte TOPLAM TUTAR olarak {ocr_amount} TL okudu. Bu değeri doğrula.
 
-GÖREV:
-1. Görüntüdeki el yazısı rakamları dikkatlice incele
-2. TOPLAM veya nihai tutar olarak yazılmış rakamı bul
-3. El yazısı rakamları: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 - bunları dikkatle ayırt et
-4. Özellikle 8 ve 9 rakamlarını karıştırma (8'in iki halkası kapalı, 9'un üst halkası kapalı alt kısmı açık)
-5. 0 ve 6 rakamlarını karıştırma
+## TALİMATLAR
+
+1. **Taksi Fişi Yazım Karakteristiği**: Taksi fişlerinde rakamlar hızlı yazıldığı için:
+   - "0" rakamı tam kapatılmaz veya uçları birbirine değerek "8" gibi görünebilir
+   - "9" rakamının kuyruğu "0" ile karışabilir
+
+2. **KRİTİK - 0 vs 8 Ayrımı**:
+   - Bir rakamı "8" olarak okuman için, karakterin ORTA KISMINDAKİ KIVRIM (boğum) NET ve BİLİNÇLİ yapılmış olmalı
+   - Eğer orta kısım sadece birbirine değen iki çizgi gibiyse → bu büyük olasılıkla BOZUK BİR "0"dır
+   - Belirsizlik varsa → taksi ücreti mantığı gereği (yuvarlak hesaplar: 10, 20, 50, 100, 150, 200, 250, 500, 1000 TL katları) "0" olarak kabul et
+
+3. **Çapraz Kontrol**:
+   - Tutarı dokümandaki diğer matematiksel ifadelerle doğrula
+   - KDV %0 (TESK) veya %20 ise ara toplamla tutarlılığı kontrol et
+   - 1800, 1880, 989 gibi yuvarlak olmayan tutarlar görüyorsan → "0" hatalı okuma ihtimaline karşı tekrar değerlendir
+   - Örnek: 989 yerine 980, 1880 yerine 1800, 188 yerine 180 olabilir
+
+4. **Mantık Kontrolü**:
+   - Taksi ücretleri genelde 50, 100, 150, 200, 250, 300, 400, 500, 750, 1000 TL gibi yuvarlak rakamlardır
+   - Çok yüksek veya tuhaf tutarlar (1888, 989, 1089) şüpheli kabul edilmeli
 
 SADECE JSON DÖNDÜR:
 {{
-    "el_yazisi_tutar": görüntüde okuduğun el yazısı tutar (sayı),
+    "el_yazisi_tutar": görüntüde okuduğun doğru el yazısı tutar (sayı),
     "ocr_tutar_dogru_mu": OCR'ın okuduğu {ocr_amount} doğru mu (true/false),
     "duzeltilmis_tutar": eğer OCR yanlışsa doğru tutar, doğruysa null,
     "guven_skoru": el yazısı okuma güvenin 0-100 arası,
-    "aciklama": kısa açıklama
+    "aciklama": kısa açıklama (0/8 karışıklığı tespit ettiysen belirt)
 }}"""
 
             message = self._claude_client.messages.create(
