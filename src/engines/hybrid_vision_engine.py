@@ -14,6 +14,7 @@ Bu hibrit yaklaşım:
 import os
 import json
 import re
+import base64
 from typing import Optional, Dict, Any, List, Tuple
 from pathlib import Path
 from datetime import datetime
@@ -201,6 +202,107 @@ JSON:
             if re.search(pattern, text, re.IGNORECASE):
                 return True
         return False
+
+    def _verify_handwritten_amount_with_vision(self, image_path: str, ocr_amount: float) -> Dict[str, Any]:
+        """
+        Claude Vision ile el yazısı tutarı doğrula.
+
+        Taksi fişlerinde el yazısı ile yazılan tutarları OCR yanlış okuyabilir.
+        Bu metod görüntüyü doğrudan Claude'a göndererek el yazısını doğrular.
+        """
+        try:
+            # Görüntüyü base64'e çevir
+            with open(image_path, "rb") as f:
+                image_data = base64.standard_b64encode(f.read()).decode("utf-8")
+
+            # Dosya uzantısından media type belirle
+            ext = Path(image_path).suffix.lower()
+            media_type_map = {
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".png": "image/png",
+                ".gif": "image/gif",
+                ".webp": "image/webp"
+            }
+            media_type = media_type_map.get(ext, "image/jpeg")
+
+            # Claude Vision'a gönder
+            prompt = f"""Bu taksi fişi/makbuz görüntüsündeki EL YAZISI ile yazılmış TOPLAM TUTAR rakamını oku.
+
+OCR sistemi bu tutarı {ocr_amount} TL olarak okudu.
+
+GÖREV:
+1. Görüntüdeki el yazısı rakamları dikkatlice incele
+2. TOPLAM veya nihai tutar olarak yazılmış rakamı bul
+3. El yazısı rakamları: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 - bunları dikkatle ayırt et
+4. Özellikle 8 ve 9 rakamlarını karıştırma (8'in iki halkası kapalı, 9'un üst halkası kapalı alt kısmı açık)
+5. 0 ve 6 rakamlarını karıştırma
+
+SADECE JSON DÖNDÜR:
+{{
+    "el_yazisi_tutar": görüntüde okuduğun el yazısı tutar (sayı),
+    "ocr_tutar_dogru_mu": OCR'ın okuduğu {ocr_amount} doğru mu (true/false),
+    "duzeltilmis_tutar": eğer OCR yanlışsa doğru tutar, doğruysa null,
+    "guven_skoru": el yazısı okuma güvenin 0-100 arası,
+    "aciklama": kısa açıklama
+}}"""
+
+            message = self._claude_client.messages.create(
+                model=self.claude_model,
+                max_tokens=500,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": media_type,
+                                "data": image_data
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }]
+            )
+
+            response_text = message.content[0].text.strip()
+
+            # JSON parse
+            if response_text.startswith("```"):
+                lines = response_text.split("\n")
+                json_lines = []
+                in_json = False
+                for line in lines:
+                    if line.startswith("```") and not in_json:
+                        in_json = True
+                        continue
+                    elif line.startswith("```") and in_json:
+                        break
+                    elif in_json:
+                        json_lines.append(line)
+                response_text = "\n".join(json_lines)
+
+            result = json.loads(response_text)
+            return {
+                "verified": True,
+                "el_yazisi_tutar": result.get("el_yazisi_tutar"),
+                "ocr_tutar_dogru_mu": result.get("ocr_tutar_dogru_mu", True),
+                "duzeltilmis_tutar": result.get("duzeltilmis_tutar"),
+                "guven_skoru": result.get("guven_skoru", 0),
+                "aciklama": result.get("aciklama", "")
+            }
+
+        except Exception as e:
+            return {
+                "verified": False,
+                "error": str(e),
+                "ocr_tutar_dogru_mu": True,  # Hata durumunda OCR'a güven
+                "duzeltilmis_tutar": None
+            }
 
     def _validate_claude_output(self, data: Dict[str, Any], raw_text: str) -> Dict[str, Any]:
         """
@@ -397,6 +499,17 @@ JSON:
         claude_language = data.get("detected_language", detected_language)
         tesk_from_claude = data.get("tesk_detected", False)
 
+        # Taksi ve TESK detection (erken tespit - el yazısı doğrulama için)
+        ocr_lower = ocr_text.lower()
+        is_taxi = any(kw in ocr_lower for kw in ['taksi', 'taxi'])
+
+        # TESK fişleri de el yazısı tutar içerebilir
+        tesk_keywords_early = ['tesk', 'esnaf ve sanatkar', 'konfederasyonu', 'perakende satış fişi', 'perakende satis fisi']
+        is_tesk_early = any(kw in ocr_lower for kw in tesk_keywords_early)
+
+        # El yazısı doğrulama gerektiren fiş türleri
+        needs_handwriting_check = is_taxi or is_tesk_early
+
         # FALLBACK: Eğer brut_tutar 0 veya None ise, raw text'ten en büyük sayıyı çek
         brut_tutar = financials.get("brut_tutar")
         if brut_tutar is None or brut_tutar == 0:
@@ -422,20 +535,41 @@ JSON:
                 financials["brut_tutar"] = max_amount
                 financials["tutar_kaynak"] = "fallback_max_number"
 
+        # TAKSİ/TESK FİŞİ EL YAZISI DOĞRULAMA
+        # Taksi ve TESK fişlerinde el yazısı tutarlar yanlış okunabilir (örn: 980 -> 989)
+        # Claude Vision ile doğrulama yap
+        brut_tutar = financials.get("brut_tutar")
+        handwriting_verification = None
+        if needs_handwriting_check and brut_tutar and brut_tutar > 0:
+            handwriting_verification = self._verify_handwritten_amount_with_vision(
+                image_path, brut_tutar
+            )
+
+            if handwriting_verification.get("verified"):
+                if not handwriting_verification.get("ocr_tutar_dogru_mu", True):
+                    # OCR yanlış okumuş, düzeltilmiş tutarı kullan
+                    duzeltilmis = handwriting_verification.get("duzeltilmis_tutar")
+                    if duzeltilmis and duzeltilmis > 0:
+                        financials["brut_tutar_ocr_orijinal"] = brut_tutar
+                        financials["brut_tutar"] = duzeltilmis
+                        financials["tutar_kaynak"] = "claude_vision_el_yazisi_duzeltme"
+                        financials["el_yazisi_dogrulama"] = {
+                            "ocr_okudu": brut_tutar,
+                            "claude_duzeltme": duzeltilmis,
+                            "guven_skoru": handwriting_verification.get("guven_skoru"),
+                            "aciklama": handwriting_verification.get("aciklama")
+                        }
+
         # Update language detection
         detected_language = claude_language if claude_language else detected_language
         is_foreign = detected_language != "TR"
 
         # Apply TESK rule
         tesk_detected = tesk_detected or tesk_from_claude
-        ocr_lower = ocr_text.lower()
 
         # TESK detection: "TESK" veya "Esnaf ve Sanatkarları Konfederasyonu"
         tesk_keywords = ['tesk', 'esnaf ve sanatkar', 'konfederasyonu', 'perakende satış fişi']
         is_tesk_receipt = any(kw in ocr_lower for kw in tesk_keywords) or tesk_detected
-
-        # Taksi detection
-        is_taxi = any(kw in ocr_lower for kw in ['taksi', 'taxi'])
 
         if is_foreign:
             financials["yurt_disi_masrafi"] = True
@@ -557,21 +691,28 @@ JSON:
         if header.get("belge_no"):
             confidence += 0.05
 
+        # Metadata
+        result_metadata = {
+            "engine": "hybrid_vision",
+            "google_confidence": google_confidence,
+            "claude_model": self.claude_model,
+            "detected_language": detected_language,
+            "is_foreign": is_foreign,
+            "tesk_detected": tesk_detected,
+            "is_taxi": is_taxi,
+            "timestamp": datetime.now().isoformat()
+        }
+
+        # El yazısı doğrulama sonucunu metadata'ya ekle
+        if handwriting_verification:
+            result_metadata["handwriting_verification"] = handwriting_verification
+
         return OCRResult(
             raw_text=ocr_text,
             lines=google_result.lines,
             confidence=min(confidence, 1.0),
             fields=fields,
-            metadata={
-                "engine": "hybrid_vision",
-                "google_confidence": google_confidence,
-                "claude_model": self.claude_model,
-                "detected_language": detected_language,
-                "is_foreign": is_foreign,
-                "tesk_detected": tesk_detected,
-                "is_taxi": is_taxi,
-                "timestamp": datetime.now().isoformat()
-            }
+            metadata=result_metadata
         )
 
     def extract_to_sap_json(self, image_path: str) -> Dict[str, Any]:
