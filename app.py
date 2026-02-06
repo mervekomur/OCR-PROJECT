@@ -366,7 +366,7 @@ def clear_logs():
     st.session_state.logs = []
 
 
-def process_image(image_bytes, filename, pipeline="fast"):
+def process_image(image_bytes, filename):
     start = time.time()
 
     temp_dir = Path("temp_uploads")
@@ -397,11 +397,6 @@ def process_image(image_bytes, filename, pipeline="fast"):
 
         add_log("Google Vision tamamlandi", "success")
         add_log("Claude analiz ediyor...", "info")
-
-        if pipeline == "deep":
-            add_log("Derin analiz yapiliyor...", "info")
-            time.sleep(0.3)
-
         add_log("Claude tamamlandi", "success")
 
         validation = result.fields.get("validation", {})
@@ -450,16 +445,6 @@ with st.sidebar:
             <p style="color: #94a3b8; font-size: 0.75rem; margin: 0;">Finansal OCR</p>
         </div>
         ''', unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    st.markdown("**Pipeline Modu**")
-    pipeline = st.radio(
-        "Pipeline",
-        ["fast", "deep"],
-        format_func=lambda x: "Hizli Pipeline" if x == "fast" else "Derin Pipeline",
-        label_visibility="collapsed"
-    )
 
     st.markdown("---")
 
@@ -536,7 +521,6 @@ with col_left:
                 <div class="card-header">📋 Dosya Bilgisi</div>
                 <p style="color: #475569; margin: 0.3rem 0;"><b>Ad:</b> {uploaded.name}</p>
                 <p style="color: #475569; margin: 0.3rem 0;"><b>Boyut:</b> {uploaded.size/1024:.1f} KB</p>
-                <p style="color: #475569; margin: 0.3rem 0;"><b>Mod:</b> {'Hizli' if pipeline=='fast' else 'Derin'}</p>
             </div>
             ''', unsafe_allow_html=True)
 
@@ -545,7 +529,7 @@ with col_left:
             if st.button("🚀 Islemi Baslat", use_container_width=True):
                 clear_logs()
                 with st.spinner("Isleniyor..."):
-                    result = process_image(uploaded.getvalue(), uploaded.name, pipeline)
+                    result = process_image(uploaded.getvalue(), uploaded.name)
                     st.session_state.results = result
                 st.rerun()
 
